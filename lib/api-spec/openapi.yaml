@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: products
+    description: Product operations
 paths:
   /healthz:
     get:
@@ -24,6 +26,102 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all products
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [Skincare, Makeup, Profumi]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+  /matches:
+    get:
+      operationId: listMatches
+      tags: [products]
+      summary: List all product matches (luxury vs dupe pairs)
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [Skincare, Makeup, Profumi]
+        - name: search
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of product match pairs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductMatch"
+  /matches/{matchId}:
+    get:
+      operationId: getMatch
+      tags: [products]
+      summary: Get a specific product match by match ID
+      parameters:
+        - name: matchId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Product match detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductMatch"
+        "404":
+          description: Match not found
+  /categories/summary:
+    get:
+      operationId: getCategorySummary
+      tags: [products]
+      summary: Get product counts per category
+      responses:
+        "200":
+          description: Category summary
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorySummary"
+  /trending:
+    get:
+      operationId: getTrending
+      tags: [products]
+      summary: Get trending matches
+      responses:
+        "200":
+          description: Trending matches
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductMatch"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +131,77 @@ components:
           type: string
       required:
         - status
-
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        brand:
+          type: string
+        price:
+          type: number
+          format: float
+        imageUrl:
+          type: string
+        affiliateLink:
+          type: string
+        category:
+          type: string
+          enum: [Skincare, Makeup, Profumi]
+        type:
+          type: string
+          enum: [Luxury, Dupe]
+        matchId:
+          type: integer
+        matchScore:
+          type: integer
+      required:
+        - id
+        - name
+        - brand
+        - price
+        - imageUrl
+        - affiliateLink
+        - category
+        - type
+        - matchId
+        - matchScore
+    ProductMatch:
+      type: object
+      properties:
+        matchId:
+          type: integer
+        category:
+          type: string
+        luxury:
+          $ref: "#/components/schemas/Product"
+        dupe:
+          $ref: "#/components/schemas/Product"
+        matchScore:
+          type: integer
+        priceDifference:
+          type: number
+          format: float
+        savingsPercent:
+          type: number
+          format: float
+      required:
+        - matchId
+        - category
+        - luxury
+        - dupe
+        - matchScore
+        - priceDifference
+        - savingsPercent
+    CategorySummary:
+      type: object
+      properties:
+        category:
+          type: string
+        count:
+          type: integer
+      required:
+        - category
+        - count

@@ -13,7 +13,14 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  CategorySummary,
+  HealthStatus,
+  ListMatchesParams,
+  ListProductsParams,
+  Product,
+  ProductMatch,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +99,429 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all products
+ */
+export const getListProductsUrl = (params?: ListProductsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/products?${stringifiedParams}`
+    : `/api/products`;
+};
+
+export const listProducts = async (
+  params?: ListProductsParams,
+  options?: RequestInit,
+): Promise<Product[]> => {
+  return customFetch<Product[]>(getListProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListProductsQueryKey = (params?: ListProductsParams) => {
+  return [`/api/products`, ...(params ? [params] : [])] as const;
+};
+
+export const getListProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListProductsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listProducts>>> = ({
+    signal,
+  }) => listProducts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listProducts>>
+>;
+export type ListProductsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all products
+ */
+
+export function useListProducts<
+  TData = Awaited<ReturnType<typeof listProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListProductsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all product matches (luxury vs dupe pairs)
+ */
+export const getListMatchesUrl = (params?: ListMatchesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/matches?${stringifiedParams}`
+    : `/api/matches`;
+};
+
+export const listMatches = async (
+  params?: ListMatchesParams,
+  options?: RequestInit,
+): Promise<ProductMatch[]> => {
+  return customFetch<ProductMatch[]>(getListMatchesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListMatchesQueryKey = (params?: ListMatchesParams) => {
+  return [`/api/matches`, ...(params ? [params] : [])] as const;
+};
+
+export const getListMatchesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listMatches>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListMatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListMatchesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listMatches>>> = ({
+    signal,
+  }) => listMatches(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listMatches>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListMatchesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listMatches>>
+>;
+export type ListMatchesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all product matches (luxury vs dupe pairs)
+ */
+
+export function useListMatches<
+  TData = Awaited<ReturnType<typeof listMatches>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListMatchesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listMatches>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListMatchesQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get a specific product match by match ID
+ */
+export const getGetMatchUrl = (matchId: number) => {
+  return `/api/matches/${matchId}`;
+};
+
+export const getMatch = async (
+  matchId: number,
+  options?: RequestInit,
+): Promise<ProductMatch> => {
+  return customFetch<ProductMatch>(getGetMatchUrl(matchId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetMatchQueryKey = (matchId: number) => {
+  return [`/api/matches/${matchId}`] as const;
+};
+
+export const getGetMatchQueryOptions = <
+  TData = Awaited<ReturnType<typeof getMatch>>,
+  TError = ErrorType<void>,
+>(
+  matchId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMatch>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetMatchQueryKey(matchId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getMatch>>> = ({
+    signal,
+  }) => getMatch(matchId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!matchId,
+    ...queryOptions,
+  } as UseQueryOptions<Awaited<ReturnType<typeof getMatch>>, TError, TData> & {
+    queryKey: QueryKey;
+  };
+};
+
+export type GetMatchQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getMatch>>
+>;
+export type GetMatchQueryError = ErrorType<void>;
+
+/**
+ * @summary Get a specific product match by match ID
+ */
+
+export function useGetMatch<
+  TData = Awaited<ReturnType<typeof getMatch>>,
+  TError = ErrorType<void>,
+>(
+  matchId: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getMatch>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetMatchQueryOptions(matchId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get product counts per category
+ */
+export const getGetCategorySummaryUrl = () => {
+  return `/api/categories/summary`;
+};
+
+export const getCategorySummary = async (
+  options?: RequestInit,
+): Promise<CategorySummary[]> => {
+  return customFetch<CategorySummary[]>(getGetCategorySummaryUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetCategorySummaryQueryKey = () => {
+  return [`/api/categories/summary`] as const;
+};
+
+export const getGetCategorySummaryQueryOptions = <
+  TData = Awaited<ReturnType<typeof getCategorySummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCategorySummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetCategorySummaryQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getCategorySummary>>
+  > = ({ signal }) => getCategorySummary({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getCategorySummary>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetCategorySummaryQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getCategorySummary>>
+>;
+export type GetCategorySummaryQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get product counts per category
+ */
+
+export function useGetCategorySummary<
+  TData = Awaited<ReturnType<typeof getCategorySummary>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getCategorySummary>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetCategorySummaryQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get trending matches
+ */
+export const getGetTrendingUrl = () => {
+  return `/api/trending`;
+};
+
+export const getTrending = async (
+  options?: RequestInit,
+): Promise<ProductMatch[]> => {
+  return customFetch<ProductMatch[]>(getGetTrendingUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetTrendingQueryKey = () => {
+  return [`/api/trending`] as const;
+};
+
+export const getGetTrendingQueryOptions = <
+  TData = Awaited<ReturnType<typeof getTrending>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrending>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetTrendingQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getTrending>>> = ({
+    signal,
+  }) => getTrending({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getTrending>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetTrendingQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getTrending>>
+>;
+export type GetTrendingQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get trending matches
+ */
+
+export function useGetTrending<
+  TData = Awaited<ReturnType<typeof getTrending>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getTrending>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetTrendingQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

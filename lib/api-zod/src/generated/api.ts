@@ -14,3 +14,152 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * @summary List all products
+ */
+export const ListProductsQueryParams = zod.object({
+  category: zod.enum(["Skincare", "Makeup", "Profumi"]).optional(),
+  search: zod.coerce.string().optional(),
+});
+
+export const ListProductsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  brand: zod.string(),
+  price: zod.number(),
+  imageUrl: zod.string(),
+  affiliateLink: zod.string(),
+  category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+  type: zod.enum(["Luxury", "Dupe"]),
+  matchId: zod.number(),
+  matchScore: zod.number(),
+});
+export const ListProductsResponse = zod.array(ListProductsResponseItem);
+
+/**
+ * @summary List all product matches (luxury vs dupe pairs)
+ */
+export const ListMatchesQueryParams = zod.object({
+  category: zod.enum(["Skincare", "Makeup", "Profumi"]).optional(),
+  search: zod.coerce.string().optional(),
+});
+
+export const ListMatchesResponseItem = zod.object({
+  matchId: zod.number(),
+  category: zod.string(),
+  luxury: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+  }),
+  dupe: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+  }),
+  matchScore: zod.number(),
+  priceDifference: zod.number(),
+  savingsPercent: zod.number(),
+});
+export const ListMatchesResponse = zod.array(ListMatchesResponseItem);
+
+/**
+ * @summary Get a specific product match by match ID
+ */
+export const GetMatchParams = zod.object({
+  matchId: zod.coerce.number(),
+});
+
+export const GetMatchResponse = zod.object({
+  matchId: zod.number(),
+  category: zod.string(),
+  luxury: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+  }),
+  dupe: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+  }),
+  matchScore: zod.number(),
+  priceDifference: zod.number(),
+  savingsPercent: zod.number(),
+});
+
+/**
+ * @summary Get product counts per category
+ */
+export const GetCategorySummaryResponseItem = zod.object({
+  category: zod.string(),
+  count: zod.number(),
+});
+export const GetCategorySummaryResponse = zod.array(
+  GetCategorySummaryResponseItem,
+);
+
+/**
+ * @summary Get trending matches
+ */
+export const GetTrendingResponseItem = zod.object({
+  matchId: zod.number(),
+  category: zod.string(),
+  luxury: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+  }),
+  dupe: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+  }),
+  matchScore: zod.number(),
+  priceDifference: zod.number(),
+  savingsPercent: zod.number(),
+});
+export const GetTrendingResponse = zod.array(GetTrendingResponseItem);

@@ -8,3 +8,75 @@
 export interface HealthStatus {
   status: string;
 }
+
+export type ProductCategory =
+  (typeof ProductCategory)[keyof typeof ProductCategory];
+
+export const ProductCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Profumi: "Profumi",
+} as const;
+
+export type ProductType = (typeof ProductType)[keyof typeof ProductType];
+
+export const ProductType = {
+  Luxury: "Luxury",
+  Dupe: "Dupe",
+} as const;
+
+export interface Product {
+  id: number;
+  name: string;
+  brand: string;
+  price: number;
+  imageUrl: string;
+  affiliateLink: string;
+  category: ProductCategory;
+  type: ProductType;
+  matchId: number;
+  matchScore: number;
+}
+
+export interface ProductMatch {
+  matchId: number;
+  category: string;
+  luxury: Product;
+  dupe: Product;
+  matchScore: number;
+  priceDifference: number;
+  savingsPercent: number;
+}
+
+export interface CategorySummary {
+  category: string;
+  count: number;
+}
+
+export type ListProductsParams = {
+  category?: ListProductsCategory;
+  search?: string;
+};
+
+export type ListProductsCategory =
+  (typeof ListProductsCategory)[keyof typeof ListProductsCategory];
+
+export const ListProductsCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Profumi: "Profumi",
+} as const;
+
+export type ListMatchesParams = {
+  category?: ListMatchesCategory;
+  search?: string;
+};
+
+export type ListMatchesCategory =
+  (typeof ListMatchesCategory)[keyof typeof ListMatchesCategory];
+
+export const ListMatchesCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Profumi: "Profumi",
+} as const;

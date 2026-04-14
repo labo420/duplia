@@ -1,0 +1,29 @@
+Agisci come un Senior Full-Stack Developer e UX Designer specializzato in piattaforme e-commerce di lusso per il mercato europeo.
+
+PROGETTO: 
+Crea una Web App mobile-friendly (PWA ready) chiamata "Dupefy". Il sito permette di confrontare prodotti beauty di lusso con le loro versioni economiche (Dupe) disponibili in Europa.
+
+REQUISITI TECNICI:
+1. Stack: Python (Flask) per il backend, SQLite per il database e Tailwind CSS per il frontend.
+2. Database: Tabella 'Products' con: id, nome, brand, prezzo (float), immagine_url, link_affiliato, categoria (Skincare, Makeup, Profumi), tipo (Luxury o Dupe) e match_id.
+3. Localizzazione Europea: 
+   - Usa l'Euro (€) come valuta predefinita.
+   - Inserisci un footer con link a "Privacy & Cookie Policy" e un semplice banner per il consenso cookie in conformità al GDPR.
+
+DESIGN (Stile Sephora/Apple):
+- Interfaccia minimalista: sfondo bianco puro (#FFFFFF), testi in nero o grigio antracite, font sans-serif moderno (es. 'Inter').
+- Molto spazio bianco (negative space) per un look pulito e professionale.
+- Homepage: Header con logo "Dupefy" elegante, barra di ricerca prominente e sezione "Trend del Momento" con card dai bordi arrotondati.
+- Pagina di Confronto: Visualizzazione affiancata (Side-by-Side). Mostra a sinistra il prodotto Luxury e a destra il Dupe. 
+- Elementi chiave nel confronto: "Match Score" (es. 95% Somiglianza), differenza di prezzo in evidenza e un grande bottone CTA "Acquista l'alternativa" con stile minimale.
+
+FUNZIONALITÀ:
+- Ricerca istantanea che filtra i match nel database.
+- Sistema di filtraggio per categoria (Skincare, Makeup, Profumi).
+- Inserisci nel database 3 match reali famosi in Europa per il test:
+  1. Drunk Elephant D-Bronzi vs L'Oreal Lumi Glotion (Makeup)
+  2. Charlotte Tilbury Flawless Filter vs Elf Halo Glow (Makeup)
+  3. Kiehl’s Ultra Facial Cream vs CeraVe Moisturizing Cream (Skincare)
+
+ISTRUZIONI UX: 
+L'app deve essere estremamente veloce e fluida su mobile. Le immagini dei prodotti devono essere contenute in quadrati perfetti con fondo neutro.
