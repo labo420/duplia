@@ -1,8 +1,6 @@
-import React from "react";
 import { Link } from "wouter";
 import { ProductMatch } from "@workspace/api-client-react/src/generated/api.schemas";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { ProductImage } from "./ProductImage";
 
 interface MatchCardProps {
   match: ProductMatch;
@@ -10,59 +8,80 @@ interface MatchCardProps {
 
 export function MatchCard({ match }: MatchCardProps) {
   return (
-    <Link href={`/match/${match.matchId}`}>
-      <Card className="group cursor-pointer overflow-hidden border-border shadow-sm hover:shadow-md transition-all duration-300 rounded-2xl h-full flex flex-col">
-        <CardContent className="p-0 flex flex-col h-full relative">
-          <div className="absolute top-3 left-3 z-10">
-            <Badge className="bg-foreground text-background font-medium hover:bg-foreground">
-              {match.matchScore}% Somiglianza
-            </Badge>
+    <Link href={`/match/${match.matchId}`} data-testid={`card-match-${match.matchId}`}>
+      <div className="group cursor-pointer overflow-hidden rounded-3xl bg-card shadow-md hover:shadow-xl transition-all duration-500 hover:-translate-y-1 h-full flex flex-col">
+        {/* Image area */}
+        <div className="flex relative overflow-hidden">
+          <div className="w-1/2 aspect-square bg-muted overflow-hidden">
+            <ProductImage
+              src={match.luxury.imageUrl}
+              alt={match.luxury.name}
+              category={match.category}
+            />
           </div>
-          <div className="flex relative">
-            <div className="w-1/2 aspect-square bg-muted flex items-center justify-center border-r border-border">
-               {/* Product Image Placeholder */}
-               <div className="w-24 h-24 bg-card rounded-md shadow-sm border border-border flex items-center justify-center p-2">
-                 <span className="text-xs text-muted-foreground text-center truncate">{match.luxury.brand}</span>
-               </div>
-            </div>
-            <div className="w-1/2 aspect-square bg-muted/50 flex items-center justify-center">
-               {/* Product Image Placeholder */}
-               <div className="w-24 h-24 bg-card rounded-md shadow-sm border border-border flex items-center justify-center p-2">
-                 <span className="text-xs text-muted-foreground text-center truncate">{match.dupe.brand}</span>
-               </div>
-            </div>
-            {/* VS Badge */}
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-background border border-border rounded-full flex items-center justify-center shadow-sm z-10 text-xs font-semibold text-muted-foreground">
-              VS
-            </div>
+          <div className="w-1/2 aspect-square bg-muted/60 overflow-hidden">
+            <ProductImage
+              src={match.dupe.imageUrl}
+              alt={match.dupe.name}
+              category={match.category}
+            />
           </div>
-          
-          <div className="p-5 flex-1 flex flex-col">
-            <div className="text-xs text-muted-foreground font-medium mb-1 uppercase tracking-wider">{match.category}</div>
-            
-            <div className="grid grid-cols-2 gap-4 mt-2">
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Luxury</p>
-                <p className="font-semibold text-sm leading-tight line-clamp-2">{match.luxury.name}</p>
-                <p className="text-muted-foreground text-xs mt-1">€{match.luxury.price.toFixed(2)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Dupefy</p>
-                <p className="font-semibold text-sm leading-tight line-clamp-2">{match.dupe.name}</p>
-                <p className="text-foreground font-medium text-xs mt-1">€{match.dupe.price.toFixed(2)}</p>
-              </div>
-            </div>
 
-            <div className="mt-auto pt-4 flex items-center justify-between border-t border-border mt-4">
-               <div className="flex flex-col">
-                 <span className="text-xs text-muted-foreground">Risparmi</span>
-                 <span className="font-bold text-destructive">€{match.priceDifference.toFixed(2)} ({match.savingsPercent}%)</span>
-               </div>
-               <span className="text-sm font-medium text-foreground group-hover:underline underline-offset-4">Scopri</span>
+          {/* Match Score badge — blur glass effect */}
+          <div className="absolute top-3 left-3 z-10">
+            <span
+              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold text-foreground"
+              style={{
+                background: "rgba(255,255,255,0.55)",
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                border: "1px solid rgba(255,255,255,0.4)",
+              }}
+            >
+              {match.matchScore}% Somiglianza
+            </span>
+          </div>
+
+          {/* VS badge */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-background rounded-full flex items-center justify-center shadow-md z-10 text-[10px] font-bold text-muted-foreground">
+            VS
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="p-5 flex-1 flex flex-col">
+          <div className="text-[10px] font-semibold text-muted-foreground mb-3 uppercase tracking-widest">
+            {match.category}
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 flex-1">
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Originale</p>
+              <p className="font-serif font-semibold text-sm leading-snug line-clamp-2">{match.luxury.name}</p>
+              <p className="text-muted-foreground text-sm mt-1">€{match.luxury.price.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-[10px] text-muted-foreground mb-1 uppercase tracking-wider">Alternativa</p>
+              <p className="font-serif font-semibold text-sm leading-snug line-clamp-2">{match.dupe.name}</p>
+              <p className="text-sm mt-1" style={{ color: "hsl(345 55% 32%)" }}>
+                €{match.dupe.price.toFixed(2)}
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="mt-4 pt-4 flex items-center justify-between border-t border-border/50">
+            <div>
+              <span className="text-xs text-muted-foreground block">Risparmi</span>
+              <span className="font-bold text-sm" style={{ color: "hsl(345 55% 32%)" }}>
+                €{match.priceDifference.toFixed(2)} &middot; {Math.round(match.savingsPercent)}%
+              </span>
+            </div>
+            <span className="text-sm font-medium text-foreground group-hover:underline underline-offset-4 transition-all">
+              Scopri
+            </span>
+          </div>
+        </div>
+      </div>
     </Link>
   );
 }
