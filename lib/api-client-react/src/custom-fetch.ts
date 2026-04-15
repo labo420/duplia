@@ -308,7 +308,34 @@ async function parseSuccessBody(
 
     case "text": {
       const text = await response.text();
-      return text === "" ? null : text;
+      if (text === "") return null;
+
+      // When responseType is "auto" and the content-type resolved to "text",
+      // the server may have returned an HTML error page (e.g. a proxy
+      // "service unavailable" page) instead of the expected JSON payload.
+      // Try to parse as JSON first; if that fails and the body looks like
+      // HTML, throw so React Query treats it as an error rather than
+      // returning a raw HTML string as the query data.
+      if (responseType === "auto") {
+        if (looksLikeJson(text)) {
+          try {
+            return JSON.parse(stripBom(text));
+          } catch (cause) {
+            throw new ResponseParseError(response, text, cause, requestInfo);
+          }
+        }
+        const mediaType = getMediaType(response.headers);
+        if (mediaType === "text/html" || text.trimStart().startsWith("<")) {
+          throw new ResponseParseError(
+            response,
+            text,
+            new SyntaxError("Received unexpected HTML response instead of JSON"),
+            requestInfo,
+          );
+        }
+      }
+
+      return text;
     }
 
     case "blob":
