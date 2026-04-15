@@ -8,7 +8,7 @@ export function Header() {
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
         <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
-          <img src="/1.svg" alt="Duplia" style={{ height: "52px", width: "52px" }} />
+          <img src="/1.svg" alt="Duplia" style={{ height: "36px", width: "auto" }} />
         </Link>
       </div>
     </header>
