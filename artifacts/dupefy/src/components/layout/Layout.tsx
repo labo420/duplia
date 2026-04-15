@@ -7,8 +7,19 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="text-2xl font-bold tracking-tight">
-          Dupefy
+        <Link
+          href="/"
+          style={{
+            fontFamily: "'Inter', sans-serif",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.15em",
+            color: "#000",
+            fontSize: "24px",
+            textDecoration: "none",
+          }}
+        >
+          DUPLI<span style={{ fontWeight: 300 }}>A</span>
         </Link>
       </div>
     </header>
@@ -19,7 +30,7 @@ export function Footer() {
   return (
     <footer className="border-t border-border mt-auto py-8">
       <div className="container mx-auto max-w-5xl px-4 flex flex-col md:flex-row justify-between items-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} Dupefy. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Duplia. All rights reserved.</p>
         <div className="mt-4 md:mt-0 space-x-6">
           <a href="#" className="hover:text-foreground transition-colors">
             Privacy & Cookie Policy
@@ -37,14 +48,14 @@ export function CookieBanner() {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const consent = localStorage.getItem("dupefy-cookie-consent");
+    const consent = localStorage.getItem("duplia-cookie-consent");
     if (!consent) {
       setIsVisible(true);
     }
   }, []);
 
   const acceptCookies = () => {
-    localStorage.setItem("dupefy-cookie-consent", "true");
+    localStorage.setItem("duplia-cookie-consent", "true");
     setIsVisible(false);
   };
 

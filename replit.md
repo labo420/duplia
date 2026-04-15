@@ -1,8 +1,8 @@
-# Dupefy
+# Duplia
 
 ## Overview
 
-Dupefy is a mobile-friendly web app for comparing luxury beauty products with their affordable alternatives (dupes) available in Europe. Built with a minimalist Sephora/Apple-inspired design.
+Duplia is a mobile-friendly web app for comparing luxury beauty products with their affordable alternatives (dupes) available in Europe. Built with a minimalist Sephora/Apple-inspired design.
 
 ## Stack
 

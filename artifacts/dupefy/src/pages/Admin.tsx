@@ -63,7 +63,7 @@ function PasswordGate({ onAuth }: { onAuth: (pwd: string) => void }) {
       headers: { "x-admin-password": pwd },
     });
     if (res.ok) {
-      sessionStorage.setItem("dupefy-admin-pwd", pwd);
+      sessionStorage.setItem("duplia-admin-pwd", pwd);
       onAuth(pwd);
     } else {
       setError(true);
@@ -388,7 +388,7 @@ function AdminDashboard({ password }: { password: string }) {
 // ------- Main export -------
 export default function Admin() {
   const [password, setPassword] = useState<string | null>(
-    () => sessionStorage.getItem("dupefy-admin-pwd")
+    () => sessionStorage.getItem("duplia-admin-pwd")
   );
 
   if (!password) {
