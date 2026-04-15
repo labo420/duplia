@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout/Layout";
 import Home from "@/pages/Home";
 import MatchDetail from "@/pages/MatchDetail";
+import Admin from "@/pages/Admin";
 
 const queryClient = new QueryClient();
 
@@ -15,6 +16,7 @@ function Router() {
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/match/:matchId" component={MatchDetail} />
+        <Route path="/admin_secret_portal" component={Admin} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

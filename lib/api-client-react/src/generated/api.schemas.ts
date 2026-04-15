@@ -36,6 +36,12 @@ export interface Product {
   type: ProductType;
   matchId: number;
   matchScore: number;
+  /** @nullable */
+  formato: number | null;
+  /** @nullable */
+  unitaMisura: string | null;
+  /** @nullable */
+  pricePerUnit: number | null;
 }
 
 export interface ProductMatch {
@@ -51,6 +57,39 @@ export interface ProductMatch {
 export interface CategorySummary {
   category: string;
   count: number;
+}
+
+export type CreateProductBodyCategory =
+  (typeof CreateProductBodyCategory)[keyof typeof CreateProductBodyCategory];
+
+export const CreateProductBodyCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Profumi: "Profumi",
+} as const;
+
+export type CreateProductBodyType =
+  (typeof CreateProductBodyType)[keyof typeof CreateProductBodyType];
+
+export const CreateProductBodyType = {
+  Luxury: "Luxury",
+  Dupe: "Dupe",
+} as const;
+
+export interface CreateProductBody {
+  name: string;
+  brand: string;
+  price: number;
+  imageUrl: string;
+  affiliateLink: string;
+  category: CreateProductBodyCategory;
+  type: CreateProductBodyType;
+  matchId: number;
+  matchScore: number;
+  /** @nullable */
+  formato?: number | null;
+  /** @nullable */
+  unitaMisura?: string | null;
 }
 
 export type ListProductsParams = {

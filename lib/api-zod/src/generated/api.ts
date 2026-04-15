@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -34,11 +33,14 @@ export const ListProductsResponseItem = zod.object({
   type: zod.enum(["Luxury", "Dupe"]),
   matchId: zod.number(),
   matchScore: zod.number(),
+  formato: zod.number().nullable(),
+  unitaMisura: zod.string().nullable(),
+  pricePerUnit: zod.number().nullable(),
 });
 export const ListProductsResponse = zod.array(ListProductsResponseItem);
 
 /**
- * @summary List all product matches (luxury vs dupe pairs)
+ * @summary List all product matches
  */
 export const ListMatchesQueryParams = zod.object({
   category: zod.enum(["Skincare", "Makeup", "Profumi"]).optional(),
@@ -59,6 +61,9 @@ export const ListMatchesResponseItem = zod.object({
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
   }),
   dupe: zod.object({
     id: zod.number(),
@@ -71,6 +76,9 @@ export const ListMatchesResponseItem = zod.object({
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
   }),
   matchScore: zod.number(),
   priceDifference: zod.number(),
@@ -99,6 +107,9 @@ export const GetMatchResponse = zod.object({
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
   }),
   dupe: zod.object({
     id: zod.number(),
@@ -111,6 +122,9 @@ export const GetMatchResponse = zod.object({
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
   }),
   matchScore: zod.number(),
   priceDifference: zod.number(),
@@ -145,6 +159,9 @@ export const GetTrendingResponseItem = zod.object({
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
   }),
   dupe: zod.object({
     id: zod.number(),
@@ -157,9 +174,70 @@ export const GetTrendingResponseItem = zod.object({
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
   }),
   matchScore: zod.number(),
   priceDifference: zod.number(),
   savingsPercent: zod.number(),
 });
 export const GetTrendingResponse = zod.array(GetTrendingResponseItem);
+
+/**
+ * @summary List all products (admin)
+ */
+export const AdminListProductsHeader = zod.object({
+  "x-admin-password": zod.string(),
+});
+
+export const AdminListProductsResponseItem = zod.object({
+  id: zod.number(),
+  name: zod.string(),
+  brand: zod.string(),
+  price: zod.number(),
+  imageUrl: zod.string(),
+  affiliateLink: zod.string(),
+  category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+  type: zod.enum(["Luxury", "Dupe"]),
+  matchId: zod.number(),
+  matchScore: zod.number(),
+  formato: zod.number().nullable(),
+  unitaMisura: zod.string().nullable(),
+  pricePerUnit: zod.number().nullable(),
+});
+export const AdminListProductsResponse = zod.array(
+  AdminListProductsResponseItem,
+);
+
+/**
+ * @summary Create a new product (admin)
+ */
+export const AdminCreateProductHeader = zod.object({
+  "x-admin-password": zod.string(),
+});
+
+export const AdminCreateProductBody = zod.object({
+  name: zod.string(),
+  brand: zod.string(),
+  price: zod.number(),
+  imageUrl: zod.string(),
+  affiliateLink: zod.string(),
+  category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+  type: zod.enum(["Luxury", "Dupe"]),
+  matchId: zod.number(),
+  matchScore: zod.number(),
+  formato: zod.number().nullish(),
+  unitaMisura: zod.string().nullish(),
+});
+
+/**
+ * @summary Delete a product (admin)
+ */
+export const AdminDeleteProductParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const AdminDeleteProductHeader = zod.object({
+  "x-admin-password": zod.string(),
+});

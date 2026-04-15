@@ -19,4 +19,10 @@ export interface Product {
   type: ProductType;
   matchId: number;
   matchScore: number;
+  /** @nullable */
+  formato: number | null;
+  /** @nullable */
+  unitaMisura: string | null;
+  /** @nullable */
+  pricePerUnit: number | null;
 }

@@ -1,5 +1,5 @@
 import { useParams, Link } from "wouter";
-import { ArrowLeft, ExternalLink, ShieldCheck, Sparkles, Leaf } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShieldCheck, Sparkles, Leaf, Scale } from "lucide-react";
 import { useGetMatch, useListMatches, getGetMatchQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -33,6 +33,35 @@ const DEFAULT_REASON = {
   explanation:
     "L'analisi degli ingredienti rivela che entrambi i prodotti condividono i principi attivi principali in concentrazioni simili. La differenza di prezzo riflette principalmente il posizionamento del brand, la qualità del packaging e le campagne di marketing — non la performance sulla pelle.",
 };
+
+function PriceBlock({ price, formato, unitaMisura, pricePerUnit, accent }: {
+  price: number;
+  formato?: number | null;
+  unitaMisura?: string | null;
+  pricePerUnit?: number | null;
+  accent?: boolean;
+}) {
+  return (
+    <div>
+      <p
+        className="text-2xl font-semibold"
+        style={accent ? { color: "hsl(345 55% 32%)" } : undefined}
+      >
+        €{price.toFixed(2)}
+        {formato && unitaMisura && (
+          <span className="text-base font-normal text-muted-foreground ml-2">
+            · {formato}{unitaMisura}
+          </span>
+        )}
+      </p>
+      {pricePerUnit && unitaMisura && (
+        <p className="text-sm text-muted-foreground/70 mt-0.5 font-light">
+          {pricePerUnit.toFixed(2).replace(".", ",")} € / 100{unitaMisura}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function MatchDetail() {
   const params = useParams<{ matchId: string }>();
@@ -73,17 +102,23 @@ export default function MatchDetail() {
     );
   }
 
+  // Value comparison: price per unit delta
+  const luxuryPpu = match.luxury.pricePerUnit;
+  const dupePpu = match.dupe.pricePerUnit;
+  const valueSavingsPct = (luxuryPpu && dupePpu && luxuryPpu > 0)
+    ? Math.round((1 - dupePpu / luxuryPpu) * 100)
+    : null;
+  const sameUnit = match.luxury.unitaMisura === match.dupe.unitaMisura;
+
   return (
     <div className="container mx-auto max-w-5xl px-4 py-8 md:py-12 pb-24">
-      {/* Back link */}
       <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-10 transition-colors">
         <ArrowLeft className="w-4 h-4 mr-2" />
         Torna ai risultati
       </Link>
 
       {/* Hero banner */}
-      <div className="rounded-3xl overflow-hidden bg-muted/30 mb-12 flex flex-col items-center text-center p-8 md:p-12 relative">
-        {/* Blurred match score badge */}
+      <div className="rounded-3xl overflow-hidden bg-muted/30 mb-12 flex flex-col items-center text-center p-8 md:p-12">
         <span
           className="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold text-foreground mb-6"
           style={{
@@ -104,7 +139,13 @@ export default function MatchDetail() {
           <strong style={{ color: "hsl(345 55% 32%)" }}>
             €{match.priceDifference.toFixed(2)} ({Math.round(match.savingsPercent)}%)
           </strong>{" "}
-          scegliendo questa alternativa invece del prodotto originale.
+          sul prezzo di listino.
+          {valueSavingsPct && sameUnit && (
+            <span className="block mt-1 text-sm">
+              Sul valore reale (prezzo/quantità) risparmi il{" "}
+              <strong style={{ color: "hsl(345 55% 32%)" }}>{valueSavingsPct}%</strong>.
+            </span>
+          )}
         </p>
       </div>
 
@@ -129,8 +170,13 @@ export default function MatchDetail() {
           </div>
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-widest">{match.luxury.brand}</p>
-            <h2 className="text-2xl font-serif font-bold leading-snug mb-2">{match.luxury.name}</h2>
-            <p className="text-xl text-muted-foreground">€{match.luxury.price.toFixed(2)}</p>
+            <h2 className="text-2xl font-serif font-bold leading-snug mb-3">{match.luxury.name}</h2>
+            <PriceBlock
+              price={match.luxury.price}
+              formato={match.luxury.formato}
+              unitaMisura={match.luxury.unitaMisura}
+              pricePerUnit={match.luxury.pricePerUnit}
+            />
           </div>
           <div className="p-4 rounded-2xl bg-muted/40">
             <div className="flex items-start gap-3 text-sm text-muted-foreground">
@@ -157,13 +203,16 @@ export default function MatchDetail() {
           </div>
           <div>
             <p className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-widest">{match.dupe.brand}</p>
-            <h2 className="text-2xl font-serif font-bold leading-snug mb-2">{match.dupe.name}</h2>
-            <p className="text-xl font-semibold" style={{ color: "hsl(345 55% 32%)" }}>
-              €{match.dupe.price.toFixed(2)}
-            </p>
+            <h2 className="text-2xl font-serif font-bold leading-snug mb-3">{match.dupe.name}</h2>
+            <PriceBlock
+              price={match.dupe.price}
+              formato={match.dupe.formato}
+              unitaMisura={match.dupe.unitaMisura}
+              pricePerUnit={match.dupe.pricePerUnit}
+              accent
+            />
           </div>
 
-          {/* CTA Button */}
           <a
             href={match.dupe.affiliateLink || "#"}
             target="_blank"
@@ -177,6 +226,44 @@ export default function MatchDetail() {
           </a>
         </div>
       </div>
+
+      {/* Value comparison table */}
+      {luxuryPpu && dupePpu && sameUnit && match.luxury.unitaMisura && (
+        <section className="mb-16" data-testid="section-value-comparison">
+          <div className="flex items-center gap-3 mb-6">
+            <Scale className="w-5 h-5 text-muted-foreground" />
+            <h2 className="text-2xl font-serif font-bold">Confronto di Valore</h2>
+          </div>
+          <div className="rounded-3xl border border-border/50 overflow-hidden shadow-sm">
+            <div className="grid grid-cols-3 bg-muted/40 px-6 py-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <span>Prodotto</span>
+              <span className="text-center">Prezzo totale</span>
+              <span className="text-right">€ / 100{match.luxury.unitaMisura}</span>
+            </div>
+            <div className="divide-y divide-border/40">
+              <div className="grid grid-cols-3 px-6 py-4 items-center">
+                <div>
+                  <p className="font-serif font-semibold text-sm">{match.luxury.name}</p>
+                  <p className="text-xs text-muted-foreground">{match.luxury.brand}</p>
+                </div>
+                <p className="text-center text-muted-foreground">€{match.luxury.price.toFixed(2)}</p>
+                <p className="text-right font-medium">€{luxuryPpu.toFixed(2)}</p>
+              </div>
+              <div className="grid grid-cols-3 px-6 py-4 items-center bg-muted/20">
+                <div>
+                  <p className="font-serif font-semibold text-sm">{match.dupe.name}</p>
+                  <p className="text-xs text-muted-foreground">{match.dupe.brand}</p>
+                </div>
+                <p className="text-center" style={{ color: "hsl(345 55% 32%)" }}>€{match.dupe.price.toFixed(2)}</p>
+                <p className="text-right font-bold" style={{ color: "hsl(345 55% 32%)" }}>€{dupePpu.toFixed(2)}</p>
+              </div>
+            </div>
+          </div>
+          <p className="text-xs text-muted-foreground/60 mt-3 pl-1">
+            Il risparmio reale per quantità equivalente è del {valueSavingsPct}%.
+          </p>
+        </section>
+      )}
 
       {/* Perché è un match? */}
       <section className="mb-16" data-testid="section-perche-match">

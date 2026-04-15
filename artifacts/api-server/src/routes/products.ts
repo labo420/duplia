@@ -10,33 +10,31 @@ import {
   GetMatchResponse,
   GetCategorySummaryResponse,
   GetTrendingResponse,
+  AdminListProductsResponse,
+  AdminCreateProductBody,
+  AdminDeleteProductParams,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-router.get("/products", async (req, res): Promise<void> => {
-  const params = ListProductsQueryParams.safeParse(req.query);
-  const conditions = [];
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 
-  if (params.success && params.data.category) {
-    conditions.push(eq(productsTable.category, params.data.category));
+function requireAdmin(req: Parameters<Parameters<typeof router.use>[0]>[0], res: Parameters<Parameters<typeof router.use>[0]>[1], next: Parameters<Parameters<typeof router.use>[0]>[2]) {
+  const pwd = req.headers["x-admin-password"];
+  if (pwd !== ADMIN_PASSWORD) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
   }
-  if (params.success && params.data.search) {
-    const term = `%${params.data.search}%`;
-    conditions.push(
-      or(
-        ilike(productsTable.name, term),
-        ilike(productsTable.brand, term)
-      )!
-    );
-  }
+  next();
+}
 
-  const products = await db
-    .select()
-    .from(productsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined);
+function calcPricePerUnit(price: number, formato: number | null | undefined): number | null {
+  if (!formato || formato <= 0) return null;
+  return Math.round((price / formato * 100) * 100) / 100;
+}
 
-  const mapped = products.map((p) => ({
+function mapProduct(p: typeof productsTable.$inferSelect) {
+  return {
     id: p.id,
     name: p.name,
     brand: p.brand,
@@ -47,9 +45,30 @@ router.get("/products", async (req, res): Promise<void> => {
     type: p.type,
     matchId: p.matchId,
     matchScore: p.matchScore,
-  }));
+    formato: p.formato ?? null,
+    unitaMisura: p.unitaMisura ?? null,
+    pricePerUnit: calcPricePerUnit(p.price, p.formato),
+  };
+}
 
-  res.json(ListProductsResponse.parse(mapped));
+router.get("/products", async (req, res): Promise<void> => {
+  const params = ListProductsQueryParams.safeParse(req.query);
+  const conditions = [];
+
+  if (params.success && params.data.category) {
+    conditions.push(eq(productsTable.category, params.data.category));
+  }
+  if (params.success && params.data.search) {
+    const term = `%${params.data.search}%`;
+    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))!);
+  }
+
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+  res.json(ListProductsResponse.parse(products.map(mapProduct)));
 });
 
 function buildMatchPairs(products: (typeof productsTable.$inferSelect)[]) {
@@ -72,30 +91,8 @@ function buildMatchPairs(products: (typeof productsTable.$inferSelect)[]) {
     matches.push({
       matchId,
       category: luxury.category,
-      luxury: {
-        id: luxury.id,
-        name: luxury.name,
-        brand: luxury.brand,
-        price: luxury.price,
-        imageUrl: luxury.imageUrl,
-        affiliateLink: luxury.affiliateLink,
-        category: luxury.category,
-        type: luxury.type,
-        matchId: luxury.matchId,
-        matchScore: luxury.matchScore,
-      },
-      dupe: {
-        id: dupe.id,
-        name: dupe.name,
-        brand: dupe.brand,
-        price: dupe.price,
-        imageUrl: dupe.imageUrl,
-        affiliateLink: dupe.affiliateLink,
-        category: dupe.category,
-        type: dupe.type,
-        matchId: dupe.matchId,
-        matchScore: dupe.matchScore,
-      },
+      luxury: mapProduct(luxury),
+      dupe: mapProduct(dupe),
       matchScore: luxury.matchScore,
       priceDifference: Math.round(priceDiff * 100) / 100,
       savingsPercent: Math.round(savingsPercent),
@@ -113,12 +110,7 @@ router.get("/matches", async (req, res): Promise<void> => {
   }
   if (params.success && params.data.search) {
     const term = `%${params.data.search}%`;
-    conditions.push(
-      or(
-        ilike(productsTable.name, term),
-        ilike(productsTable.brand, term)
-      )!
-    );
+    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))!);
   }
 
   const products = await db
@@ -126,8 +118,7 @@ router.get("/matches", async (req, res): Promise<void> => {
     .from(productsTable)
     .where(conditions.length > 0 ? and(...conditions) : undefined);
 
-  const matches = buildMatchPairs(products);
-  res.json(ListMatchesResponse.parse(matches));
+  res.json(ListMatchesResponse.parse(buildMatchPairs(products)));
 });
 
 router.get("/matches/:matchId", async (req, res): Promise<void> => {
@@ -164,13 +155,61 @@ router.get("/categories/summary", async (_req, res): Promise<void> => {
 });
 
 router.get("/trending", async (_req, res): Promise<void> => {
-  const products = await db
-    .select()
-    .from(productsTable)
-    .orderBy(productsTable.matchScore);
+  const products = await db.select().from(productsTable).orderBy(productsTable.matchScore);
+  res.json(GetTrendingResponse.parse(buildMatchPairs(products)));
+});
 
-  const matches = buildMatchPairs(products);
-  res.json(GetTrendingResponse.parse(matches));
+// Admin routes
+router.get("/admin/products", requireAdmin, async (_req, res): Promise<void> => {
+  const products = await db.select().from(productsTable).orderBy(productsTable.id);
+  res.json(AdminListProductsResponse.parse(products.map(mapProduct)));
+});
+
+router.post("/admin/products", requireAdmin, async (req, res): Promise<void> => {
+  const parsed = AdminCreateProductBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [product] = await db
+    .insert(productsTable)
+    .values({
+      name: parsed.data.name,
+      brand: parsed.data.brand,
+      price: parsed.data.price,
+      imageUrl: parsed.data.imageUrl,
+      affiliateLink: parsed.data.affiliateLink,
+      category: parsed.data.category,
+      type: parsed.data.type,
+      matchId: parsed.data.matchId,
+      matchScore: parsed.data.matchScore ?? 90,
+      formato: parsed.data.formato ?? null,
+      unitaMisura: parsed.data.unitaMisura ?? null,
+    })
+    .returning();
+
+  res.status(201).json(mapProduct(product));
+});
+
+router.delete("/admin/products/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = AdminDeleteProductParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [deleted] = await db
+    .delete(productsTable)
+    .where(eq(productsTable.id, params.data.id))
+    .returning();
+
+  if (!deleted) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+
+  res.sendStatus(204);
 });
 
 export default router;

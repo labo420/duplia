@@ -7,6 +7,9 @@
  */
 
 export * from "./categorySummary";
+export * from "./createProductBody";
+export * from "./createProductBodyCategory";
+export * from "./createProductBodyType";
 export * from "./healthStatus";
 export * from "./listMatchesCategory";
 export * from "./listMatchesParams";

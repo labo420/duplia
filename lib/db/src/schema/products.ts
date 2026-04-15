@@ -13,6 +13,8 @@ export const productsTable = pgTable("products", {
   type: text("type").notNull(),
   matchId: integer("match_id").notNull(),
   matchScore: integer("match_score").notNull().default(90),
+  formato: real("formato"),
+  unitaMisura: text("unita_misura"),
 });
 
 export const insertProductSchema = createInsertSchema(productsTable).omit({ id: true });
