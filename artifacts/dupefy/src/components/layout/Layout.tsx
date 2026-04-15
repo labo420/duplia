@@ -7,19 +7,8 @@ export function Header() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
       <div className="container mx-auto max-w-5xl px-4 h-16 flex items-center justify-between">
-        <Link
-          href="/"
-          style={{
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.15em",
-            color: "#000",
-            fontSize: "24px",
-            textDecoration: "none",
-          }}
-        >
-          DUPLI<span style={{ fontWeight: 300 }}>A</span>
+        <Link href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center" }}>
+          <img src="/1.svg" alt="Duplia" style={{ height: "52px", width: "52px" }} />
         </Link>
       </div>
     </header>
