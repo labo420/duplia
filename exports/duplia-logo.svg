@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 120" width="480" height="120">
+  <defs>
+    <style><![CDATA[
+      @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600&display=swap');
+    ]]></style>
+  </defs>
+  <text
+    x="240"
+    y="60"
+    text-anchor="middle"
+    dominant-baseline="middle"
+    font-family="'Chakra Petch', sans-serif"
+    font-weight="600"
+    font-size="72"
+    letter-spacing="13"
+    fill="#3B3B3B"
+  >DUPLIA</text>
+</svg>

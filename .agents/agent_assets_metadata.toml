@@ -1,0 +1,14 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "EMjZdwnaO0SA2BFBCOEum"
+uri = "file://exports/duplia-logo.svg"
+type = "image"
+title = "DUPLIA Logo — versione scura"
+
+[[outputs]]
+id = "yn4_nNx5l7_0hQUqOuvMQ"
+uri = "file://exports/duplia-logo-negative.svg"
+type = "image"
+title = "DUPLIA Logo — versione negativa (bianco su nero)"
