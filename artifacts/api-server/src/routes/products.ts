@@ -191,6 +191,7 @@ router.get("/categories/summary", async (_req, res): Promise<void> => {
       count: sql<number>`count(distinct ${productsTable.matchId})::int`,
     })
     .from(productsTable)
+    .where(isNull(productsTable.luxuryGroupId))
     .groupBy(productsTable.category);
 
   res.json(GetCategorySummaryResponse.parse(result));
