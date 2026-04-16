@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, desc, isNull } from "drizzle-orm";
+import { eq, and, ilike, desc, isNull, sql, or } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import { AiSearchBody } from "@workspace/api-zod";
 import { searchProductWithAI } from "../lib/ai-service";
@@ -66,6 +66,89 @@ async function getNextGroupId(): Promise<number> {
   return (result[0]?.luxuryGroupId ?? 0) + 1;
 }
 
+interface SavedAiGroup {
+  luxuryGroupId: number;
+  luxury: ReturnType<typeof mapProduct>;
+  dupes: ReturnType<typeof mapProduct>[];
+  lastAiCheckedAt: string;
+}
+
+async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAiGroup | null> {
+  const aiResult = await searchProductWithAI(query);
+  if (!aiResult) return null;
+
+  if (oldGroupId) {
+    await db.delete(productsTable).where(eq(productsTable.luxuryGroupId, oldGroupId));
+  }
+
+  const now = new Date();
+  const newGroupId = await getNextGroupId();
+
+  const savedLuxuries: (typeof productsTable.$inferSelect)[] = [];
+  const savedDupes: (typeof productsTable.$inferSelect)[] = [];
+
+  for (const dupe of aiResult.dupes) {
+    const matchId = await getNextMatchId();
+
+    const [savedLuxury] = await db
+      .insert(productsTable)
+      .values({
+        name: aiResult.luxury.name,
+        brand: aiResult.luxury.brand,
+        price: aiResult.luxury.price,
+        imageUrl: aiResult.luxury.imageUrl,
+        affiliateLink: "",
+        category: aiResult.luxury.category,
+        type: "Luxury",
+        matchId,
+        matchScore: 100,
+        formato: aiResult.luxury.formato ?? null,
+        unitaMisura: aiResult.luxury.unitaMisura ?? null,
+        dupeTier: null,
+        lastAiCheckedAt: now,
+        luxuryGroupId: newGroupId,
+        aiMatchReason: null,
+      })
+      .returning();
+
+    const [savedDupe] = await db
+      .insert(productsTable)
+      .values({
+        name: dupe.name,
+        brand: dupe.brand,
+        price: dupe.price,
+        imageUrl: dupe.imageUrl,
+        affiliateLink: "",
+        category: (dupe.category ?? aiResult.luxury.category) as typeof aiResult.luxury.category,
+        type: "Dupe",
+        matchId,
+        matchScore: dupe.matchScore ?? 85,
+        formato: dupe.formato ?? null,
+        unitaMisura: dupe.unitaMisura ?? null,
+        dupeTier: dupe.dupeTier ?? null,
+        lastAiCheckedAt: now,
+        luxuryGroupId: newGroupId,
+        aiMatchReason: dupe.matchReason ?? null,
+      })
+      .returning();
+
+    savedLuxuries.push(savedLuxury);
+    savedDupes.push(savedDupe);
+  }
+
+  logger.info(
+    { query, luxuryGroupId: newGroupId, dupesCount: savedDupes.length },
+    "AI search result saved"
+  );
+
+  return {
+    luxuryGroupId: newGroupId,
+    luxury: mapProduct(savedLuxuries[0]),
+    dupes: savedDupes.map(mapProduct),
+    lastAiCheckedAt: now.toISOString(),
+  };
+}
+
 router.post("/ai/search", async (req, res): Promise<void> => {
   const bodyParsed = AiSearchBody.safeParse(req.body);
   if (!bodyParsed.success) {
@@ -76,13 +159,18 @@ router.post("/ai/search", async (req, res): Promise<void> => {
   const { query } = bodyParsed.data;
 
   try {
+    const q = query.trim();
     const existingLuxury = await db
       .select()
       .from(productsTable)
       .where(
         and(
           eq(productsTable.type, "Luxury"),
-          ilike(productsTable.name, `%${query.trim()}%`)
+          or(
+            ilike(productsTable.name, `%${q}%`),
+            ilike(productsTable.brand, `%${q}%`),
+            ilike(sql`${productsTable.brand} || ' ' || ${productsTable.name}`, `%${q}%`)
+          )
         )
       )
       .limit(1);
@@ -90,7 +178,7 @@ router.post("/ai/search", async (req, res): Promise<void> => {
     const foundLuxury = existingLuxury[0];
     const luxuryGroupId = foundLuxury?.luxuryGroupId;
 
-    if (foundLuxury && luxuryGroupId && !isStale(foundLuxury.lastAiCheckedAt, foundLuxury.category)) {
+    if (foundLuxury && luxuryGroupId) {
       const groupProducts = await db
         .select()
         .from(productsTable)
@@ -98,98 +186,45 @@ router.post("/ai/search", async (req, res): Promise<void> => {
 
       const luxuries = groupProducts.filter((p) => p.type === "Luxury");
       const dupes = groupProducts.filter((p) => p.type === "Dupe");
+      const hasValidGroup = luxuries.length > 0 && dupes.length === 3;
 
-      if (luxuries.length > 0 && dupes.length > 0) {
-        logger.info({ query, luxuryGroupId }, "Returning cached AI result");
-
-        res.json({
+      if (hasValidGroup) {
+        const cachedResponse = {
           luxuryGroupId,
           luxury: mapProduct(luxuries[0]),
           dupes: dupes.map(mapProduct),
           lastAiCheckedAt: luxuries[0].lastAiCheckedAt?.toISOString() ?? new Date().toISOString(),
           isFromCache: true,
+        };
+
+        if (!isStale(foundLuxury.lastAiCheckedAt, foundLuxury.category)) {
+          logger.info({ query, luxuryGroupId }, "Returning fresh cached AI result");
+          res.json(cachedResponse);
+          return;
+        }
+
+        logger.info({ query, luxuryGroupId }, "Returning stale cached AI result — refreshing in background");
+        res.json(cachedResponse);
+
+        setImmediate(() => {
+          saveAiResult(query, luxuryGroupId).catch((err) =>
+            logger.error({ err, query, luxuryGroupId }, "Background AI refresh failed")
+          );
         });
         return;
       }
     }
 
-    const aiResult = await searchProductWithAI(query);
+    const saved = await saveAiResult(query, luxuryGroupId ?? undefined);
 
-    if (!aiResult) {
-      res.status(404).json({ message: "Prodotto non trovato. Prova con un nome più specifico (es. 'Charlotte Tilbury Flawless Filter')." });
+    if (!saved) {
+      res.status(404).json({
+        message: "Prodotto non trovato. Prova con un nome più specifico (es. 'Charlotte Tilbury Flawless Filter').",
+      });
       return;
     }
 
-    if (foundLuxury && luxuryGroupId) {
-      await db.delete(productsTable)
-        .where(eq(productsTable.luxuryGroupId, luxuryGroupId));
-    }
-
-    const now = new Date();
-    const newGroupId = await getNextGroupId();
-
-    const savedLuxuries: (typeof productsTable.$inferSelect)[] = [];
-    const savedDupes: (typeof productsTable.$inferSelect)[] = [];
-
-    for (let i = 0; i < aiResult.dupes.length; i++) {
-      const dupe = aiResult.dupes[i];
-      const matchId = await getNextMatchId();
-
-      const [savedLuxury] = await db
-        .insert(productsTable)
-        .values({
-          name: aiResult.luxury.name,
-          brand: aiResult.luxury.brand,
-          price: aiResult.luxury.price,
-          imageUrl: aiResult.luxury.imageUrl || "",
-          affiliateLink: "",
-          category: aiResult.luxury.category,
-          type: "Luxury",
-          matchId,
-          matchScore: 100,
-          formato: aiResult.luxury.formato ?? null,
-          unitaMisura: aiResult.luxury.unitaMisura ?? null,
-          dupeTier: null,
-          lastAiCheckedAt: now,
-          luxuryGroupId: newGroupId,
-          aiMatchReason: null,
-        })
-        .returning();
-
-      const [savedDupe] = await db
-        .insert(productsTable)
-        .values({
-          name: dupe.name,
-          brand: dupe.brand,
-          price: dupe.price,
-          imageUrl: dupe.imageUrl || "",
-          affiliateLink: "",
-          category: (dupe.category ?? aiResult.luxury.category) as typeof aiResult.luxury.category,
-          type: "Dupe",
-          matchId,
-          matchScore: dupe.matchScore ?? 85,
-          formato: dupe.formato ?? null,
-          unitaMisura: dupe.unitaMisura ?? null,
-          dupeTier: dupe.dupeTier ?? null,
-          lastAiCheckedAt: now,
-          luxuryGroupId: newGroupId,
-          aiMatchReason: dupe.matchReason ?? null,
-        })
-        .returning();
-
-      savedLuxuries.push(savedLuxury);
-      savedDupes.push(savedDupe);
-    }
-
-    logger.info({ query, luxuryGroupId: newGroupId, dupesCount: savedDupes.length }, "AI search result saved");
-
-    res.json({
-      luxuryGroupId: newGroupId,
-      luxury: mapProduct(savedLuxuries[0]),
-      dupes: savedDupes.map(mapProduct),
-      lastAiCheckedAt: now.toISOString(),
-      isFromCache: false,
-    });
+    res.json({ ...saved, isFromCache: false });
   } catch (err) {
     logger.error({ err, query }, "AI search route error");
     res.status(500).json({ error: "Errore interno durante la ricerca AI" });

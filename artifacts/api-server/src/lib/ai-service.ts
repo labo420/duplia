@@ -1,7 +1,16 @@
 import { anthropic } from "@workspace/integrations-anthropic-ai";
 import { logger } from "./logger";
+import { resolveProductImageUrl } from "./image-service";
 
 export type DupeTier = "budget" | "mid-range" | "premium-dupe";
+
+const REQUIRED_TIERS: DupeTier[] = ["budget", "mid-range", "premium-dupe"];
+
+const TIER_PRICE_BANDS: Record<DupeTier, [number, number]> = {
+  budget: [5, 15],
+  "mid-range": [15, 35],
+  "premium-dupe": [35, Infinity],
+};
 
 export interface AiProduct {
   name: string;
@@ -32,10 +41,11 @@ Quando ti viene chiesto di un prodotto beauty, devi:
 Regole importanti:
 - I prodotti DEVONO essere reali e acquistabili in Europa (Italia, Germania, Francia, UK)
 - Il prezzo deve essere il prezzo reale di listino europeo in euro
-- Per ogni prodotto, suggerisci un URL immagine reale dal sito ufficiale del brand o da retailer come Sephora, Douglas, Lookfantastic, Amazon
-- Se non conosci l'URL esatto dell'immagine, usa una stringa vuota "" (NON inventare URL)
+- I prezzi DEVONO rispettare le fasce: budget €5-€15, mid-range €15-€35, premium-dupe €35+
+- Per ogni prodotto, suggerisci un URL immagine reale dal sito ufficiale del brand o da retailer come Sephora, Douglas, Lookfantastic, Amazon. Usa URL di immagini dirette (es. .jpg, .png, .webp). Se non sei sicuro dell'URL, usa stringa vuota "".
 - Il matchScore deve essere un numero realistico tra 70 e 97
 - matchReason deve essere una frase breve (max 120 caratteri) che spiega perché è un buon dupe
+- Devi includere ESATTAMENTE 3 dupe: uno "budget", uno "mid-range", uno "premium-dupe"
 
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
@@ -98,52 +108,111 @@ Rispondi con questo schema JSON esatto:
 Se il prodotto non esiste o non riesci a identificarlo con certezza, rispondi:
 {"found": false, "message": "Prodotto non trovato"}`;
 
+function validateAiResponse(parsed: unknown): { luxury: AiProduct; dupes: AiProduct[] } | null {
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const p = parsed as Record<string, unknown>;
+
+  if (!p.found) {
+    logger.info({ message: p.message }, "Product not found by AI");
+    return null;
+  }
+
+  if (!p.luxury || typeof p.luxury !== "object") {
+    logger.error({ parsed }, "Missing luxury product in AI response");
+    return null;
+  }
+
+  if (!Array.isArray(p.dupes) || p.dupes.length !== 3) {
+    logger.error({ dupesCount: Array.isArray(p.dupes) ? p.dupes.length : "N/A" }, "AI did not return exactly 3 dupes");
+    return null;
+  }
+
+  const dupes = p.dupes as AiProduct[];
+  const tiers = dupes.map((d) => d.dupeTier);
+  const allTiersPresent = REQUIRED_TIERS.every((t) => tiers.includes(t));
+  const allTiersUnique = new Set(tiers).size === 3;
+
+  if (!allTiersPresent || !allTiersUnique) {
+    logger.error({ tiers }, "AI dupes missing required tiers or have duplicate tiers");
+    return null;
+  }
+
+  for (const dupe of dupes) {
+    const tier = dupe.dupeTier;
+    if (!tier || !(tier in TIER_PRICE_BANDS)) continue;
+    const [min, max] = TIER_PRICE_BANDS[tier];
+    if (dupe.price < min * 0.8 || dupe.price > max * 1.3) {
+      logger.warn(
+        { tier, price: dupe.price, min, max },
+        "Dupe price is outside expected band — keeping but noting discrepancy"
+      );
+    }
+  }
+
+  return {
+    luxury: p.luxury as AiProduct,
+    dupes,
+  };
+}
+
+async function callAnthropicWithRetry(query: string, attempt = 1): Promise<{ luxury: AiProduct; dupes: AiProduct[] } | null> {
+  const message = await anthropic.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 8192,
+    system: SYSTEM_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: USER_PROMPT_TEMPLATE(query),
+      },
+    ],
+  });
+
+  const block = message.content[0];
+  if (block.type !== "text") {
+    logger.error("AI returned unexpected content type");
+    return null;
+  }
+
+  const text = block.text.trim();
+  logger.info({ responseLength: text.length, attempt }, "AI responded");
+
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    logger.error({ text }, "No JSON found in AI response");
+    return null;
+  }
+
+  const parsed = JSON.parse(jsonMatch[0]);
+  const validated = validateAiResponse(parsed);
+
+  if (!validated && attempt < 2) {
+    logger.warn({ attempt }, "AI response failed validation — retrying once");
+    return callAnthropicWithRetry(query, attempt + 1);
+  }
+
+  return validated;
+}
+
 export async function searchProductWithAI(query: string): Promise<AiSearchPayload | null> {
   try {
     logger.info({ query }, "Calling AI to search product");
 
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 8192,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: USER_PROMPT_TEMPLATE(query),
-        },
-      ],
-    });
+    const result = await callAnthropicWithRetry(query);
+    if (!result) return null;
 
-    const block = message.content[0];
-    if (block.type !== "text") {
-      logger.error("AI returned unexpected content type");
-      return null;
-    }
+    const { luxury, dupes } = result;
 
-    const text = block.text.trim();
-    logger.info({ responseLength: text.length }, "AI responded");
-
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      logger.error({ text }, "No JSON found in AI response");
-      return null;
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    if (!parsed.found) {
-      logger.info({ query, message: parsed.message }, "Product not found by AI");
-      return null;
-    }
-
-    if (!parsed.luxury || !Array.isArray(parsed.dupes) || parsed.dupes.length === 0) {
-      logger.error({ parsed }, "Invalid AI response structure");
-      return null;
-    }
+    const [luxuryImage, ...dupeImages] = await Promise.all([
+      resolveProductImageUrl(luxury.imageUrl, luxury.brand, luxury.name, luxury.category),
+      ...dupes.map((d) =>
+        resolveProductImageUrl(d.imageUrl, d.brand, d.name, d.category ?? luxury.category)
+      ),
+    ]);
 
     return {
-      luxury: parsed.luxury as AiProduct,
-      dupes: parsed.dupes as AiProduct[],
+      luxury: { ...luxury, imageUrl: luxuryImage },
+      dupes: dupes.map((d, i) => ({ ...d, imageUrl: dupeImages[i] })),
     };
   } catch (err) {
     logger.error({ err, query }, "AI search failed");

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, or, sql, isNull } from "drizzle-orm";
+import { eq, and, ilike, or, sql, isNull, type SQL } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import {
   ListProductsQueryParams,
@@ -56,14 +56,15 @@ function mapProduct(p: typeof productsTable.$inferSelect) {
 
 router.get("/products", async (req, res): Promise<void> => {
   const params = ListProductsQueryParams.safeParse(req.query);
-  const conditions: ReturnType<typeof eq>[] = [isNull(productsTable.luxuryGroupId) as ReturnType<typeof eq>];
+  const conditions: SQL[] = [isNull(productsTable.luxuryGroupId)];
 
   if (params.success && params.data.category) {
     conditions.push(eq(productsTable.category, params.data.category));
   }
   if (params.success && params.data.search) {
     const term = `%${params.data.search}%`;
-    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))! as ReturnType<typeof eq>);
+    const nameOrBrand = or(ilike(productsTable.name, term), ilike(productsTable.brand, term));
+    if (nameOrBrand) conditions.push(nameOrBrand);
   }
 
   const products = await db
@@ -106,14 +107,15 @@ function buildMatchPairs(products: (typeof productsTable.$inferSelect)[]) {
 
 router.get("/matches", async (req, res): Promise<void> => {
   const params = ListMatchesQueryParams.safeParse(req.query);
-  const conditions: ReturnType<typeof eq>[] = [isNull(productsTable.luxuryGroupId) as ReturnType<typeof eq>];
+  const conditions: SQL[] = [isNull(productsTable.luxuryGroupId)];
 
   if (params.success && params.data.category) {
     conditions.push(eq(productsTable.category, params.data.category));
   }
   if (params.success && params.data.search) {
     const term = `%${params.data.search}%`;
-    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))! as ReturnType<typeof eq>);
+    const nameOrBrand = or(ilike(productsTable.name, term), ilike(productsTable.brand, term));
+    if (nameOrBrand) conditions.push(nameOrBrand);
   }
 
   const products = await db
