@@ -12,5 +12,7 @@ export type ProductCategory =
 export const ProductCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
-  Profumi: "Profumi",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
 } as const;

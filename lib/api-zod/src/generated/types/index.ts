@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./aiSearchBody";
+export * from "./aiSearchNotFound";
+export * from "./aiSearchResult";
 export * from "./categorySummary";
 export * from "./createProductBody";
 export * from "./createProductBodyCategory";
@@ -17,5 +20,6 @@ export * from "./listProductsCategory";
 export * from "./listProductsParams";
 export * from "./product";
 export * from "./productCategory";
+export * from "./productDupeTier";
 export * from "./productMatch";
 export * from "./productType";

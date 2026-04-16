@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { ProductCategory } from "./productCategory";
+import type { ProductDupeTier } from "./productDupeTier";
 import type { ProductType } from "./productType";
 
 export interface Product {
@@ -25,4 +26,10 @@ export interface Product {
   unitaMisura: string | null;
   /** @nullable */
   pricePerUnit: number | null;
+  /** @nullable */
+  dupeTier: ProductDupeTier;
+  /** @nullable */
+  luxuryGroupId: number | null;
+  /** @nullable */
+  aiMatchReason: string | null;
 }

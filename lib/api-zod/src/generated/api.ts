@@ -18,7 +18,9 @@ export const HealthCheckResponse = zod.object({
  * @summary List all products
  */
 export const ListProductsQueryParams = zod.object({
-  category: zod.enum(["Skincare", "Makeup", "Profumi"]).optional(),
+  category: zod
+    .enum(["Skincare", "Makeup", "Haircare", "Bodycare", "Fragrance"])
+    .optional(),
   search: zod.coerce.string().optional(),
 });
 
@@ -29,13 +31,29 @@ export const ListProductsResponseItem = zod.object({
   price: zod.number(),
   imageUrl: zod.string(),
   affiliateLink: zod.string(),
-  category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+  category: zod.enum([
+    "Skincare",
+    "Makeup",
+    "Haircare",
+    "Bodycare",
+    "Fragrance",
+  ]),
   type: zod.enum(["Luxury", "Dupe"]),
   matchId: zod.number(),
   matchScore: zod.number(),
   formato: zod.number().nullable(),
   unitaMisura: zod.string().nullable(),
   pricePerUnit: zod.number().nullable(),
+  dupeTier: zod
+    .union([
+      zod.literal("budget"),
+      zod.literal("mid-range"),
+      zod.literal("premium-dupe"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  luxuryGroupId: zod.number().nullable(),
+  aiMatchReason: zod.string().nullable(),
 });
 export const ListProductsResponse = zod.array(ListProductsResponseItem);
 
@@ -43,7 +61,9 @@ export const ListProductsResponse = zod.array(ListProductsResponseItem);
  * @summary List all product matches
  */
 export const ListMatchesQueryParams = zod.object({
-  category: zod.enum(["Skincare", "Makeup", "Profumi"]).optional(),
+  category: zod
+    .enum(["Skincare", "Makeup", "Haircare", "Bodycare", "Fragrance"])
+    .optional(),
   search: zod.coerce.string().optional(),
 });
 
@@ -57,13 +77,29 @@ export const ListMatchesResponseItem = zod.object({
     price: zod.number(),
     imageUrl: zod.string(),
     affiliateLink: zod.string(),
-    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
     formato: zod.number().nullable(),
     unitaMisura: zod.string().nullable(),
     pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
   }),
   dupe: zod.object({
     id: zod.number(),
@@ -72,13 +108,29 @@ export const ListMatchesResponseItem = zod.object({
     price: zod.number(),
     imageUrl: zod.string(),
     affiliateLink: zod.string(),
-    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
     formato: zod.number().nullable(),
     unitaMisura: zod.string().nullable(),
     pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
   }),
   matchScore: zod.number(),
   priceDifference: zod.number(),
@@ -103,13 +155,29 @@ export const GetMatchResponse = zod.object({
     price: zod.number(),
     imageUrl: zod.string(),
     affiliateLink: zod.string(),
-    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
     formato: zod.number().nullable(),
     unitaMisura: zod.string().nullable(),
     pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
   }),
   dupe: zod.object({
     id: zod.number(),
@@ -118,13 +186,29 @@ export const GetMatchResponse = zod.object({
     price: zod.number(),
     imageUrl: zod.string(),
     affiliateLink: zod.string(),
-    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
     formato: zod.number().nullable(),
     unitaMisura: zod.string().nullable(),
     pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
   }),
   matchScore: zod.number(),
   priceDifference: zod.number(),
@@ -155,13 +239,29 @@ export const GetTrendingResponseItem = zod.object({
     price: zod.number(),
     imageUrl: zod.string(),
     affiliateLink: zod.string(),
-    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
     formato: zod.number().nullable(),
     unitaMisura: zod.string().nullable(),
     pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
   }),
   dupe: zod.object({
     id: zod.number(),
@@ -170,19 +270,112 @@ export const GetTrendingResponseItem = zod.object({
     price: zod.number(),
     imageUrl: zod.string(),
     affiliateLink: zod.string(),
-    category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
     type: zod.enum(["Luxury", "Dupe"]),
     matchId: zod.number(),
     matchScore: zod.number(),
     formato: zod.number().nullable(),
     unitaMisura: zod.string().nullable(),
     pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
   }),
   matchScore: zod.number(),
   priceDifference: zod.number(),
   savingsPercent: zod.number(),
 });
 export const GetTrendingResponse = zod.array(GetTrendingResponseItem);
+
+/**
+ * @summary AI-powered product search — finds a luxury product and generates 3 dupes by tier
+ */
+export const AiSearchBody = zod.object({
+  query: zod.string(),
+});
+
+export const AiSearchResponse = zod.object({
+  luxuryGroupId: zod.number(),
+  luxury: zod.object({
+    id: zod.number(),
+    name: zod.string(),
+    brand: zod.string(),
+    price: zod.number(),
+    imageUrl: zod.string(),
+    affiliateLink: zod.string(),
+    category: zod.enum([
+      "Skincare",
+      "Makeup",
+      "Haircare",
+      "Bodycare",
+      "Fragrance",
+    ]),
+    type: zod.enum(["Luxury", "Dupe"]),
+    matchId: zod.number(),
+    matchScore: zod.number(),
+    formato: zod.number().nullable(),
+    unitaMisura: zod.string().nullable(),
+    pricePerUnit: zod.number().nullable(),
+    dupeTier: zod
+      .union([
+        zod.literal("budget"),
+        zod.literal("mid-range"),
+        zod.literal("premium-dupe"),
+        zod.literal(null),
+      ])
+      .nullable(),
+    luxuryGroupId: zod.number().nullable(),
+    aiMatchReason: zod.string().nullable(),
+  }),
+  dupes: zod.array(
+    zod.object({
+      id: zod.number(),
+      name: zod.string(),
+      brand: zod.string(),
+      price: zod.number(),
+      imageUrl: zod.string(),
+      affiliateLink: zod.string(),
+      category: zod.enum([
+        "Skincare",
+        "Makeup",
+        "Haircare",
+        "Bodycare",
+        "Fragrance",
+      ]),
+      type: zod.enum(["Luxury", "Dupe"]),
+      matchId: zod.number(),
+      matchScore: zod.number(),
+      formato: zod.number().nullable(),
+      unitaMisura: zod.string().nullable(),
+      pricePerUnit: zod.number().nullable(),
+      dupeTier: zod
+        .union([
+          zod.literal("budget"),
+          zod.literal("mid-range"),
+          zod.literal("premium-dupe"),
+          zod.literal(null),
+        ])
+        .nullable(),
+      luxuryGroupId: zod.number().nullable(),
+      aiMatchReason: zod.string().nullable(),
+    }),
+  ),
+  lastAiCheckedAt: zod.coerce.date(),
+  isFromCache: zod.boolean(),
+});
 
 /**
  * @summary List all products (admin)
@@ -198,13 +391,29 @@ export const AdminListProductsResponseItem = zod.object({
   price: zod.number(),
   imageUrl: zod.string(),
   affiliateLink: zod.string(),
-  category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+  category: zod.enum([
+    "Skincare",
+    "Makeup",
+    "Haircare",
+    "Bodycare",
+    "Fragrance",
+  ]),
   type: zod.enum(["Luxury", "Dupe"]),
   matchId: zod.number(),
   matchScore: zod.number(),
   formato: zod.number().nullable(),
   unitaMisura: zod.string().nullable(),
   pricePerUnit: zod.number().nullable(),
+  dupeTier: zod
+    .union([
+      zod.literal("budget"),
+      zod.literal("mid-range"),
+      zod.literal("premium-dupe"),
+      zod.literal(null),
+    ])
+    .nullable(),
+  luxuryGroupId: zod.number().nullable(),
+  aiMatchReason: zod.string().nullable(),
 });
 export const AdminListProductsResponse = zod.array(
   AdminListProductsResponseItem,
@@ -223,7 +432,13 @@ export const AdminCreateProductBody = zod.object({
   price: zod.number(),
   imageUrl: zod.string(),
   affiliateLink: zod.string(),
-  category: zod.enum(["Skincare", "Makeup", "Profumi"]),
+  category: zod.enum([
+    "Skincare",
+    "Makeup",
+    "Haircare",
+    "Bodycare",
+    "Fragrance",
+  ]),
   type: zod.enum(["Luxury", "Dupe"]),
   matchId: zod.number(),
   matchScore: zod.number(),

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, or, sql } from "drizzle-orm";
+import { eq, and, ilike, or, sql, isNull } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import {
   ListProductsQueryParams,
@@ -48,25 +48,28 @@ function mapProduct(p: typeof productsTable.$inferSelect) {
     formato: p.formato ?? null,
     unitaMisura: p.unitaMisura ?? null,
     pricePerUnit: calcPricePerUnit(p.price, p.formato),
+    dupeTier: p.dupeTier ?? null,
+    luxuryGroupId: p.luxuryGroupId ?? null,
+    aiMatchReason: p.aiMatchReason ?? null,
   };
 }
 
 router.get("/products", async (req, res): Promise<void> => {
   const params = ListProductsQueryParams.safeParse(req.query);
-  const conditions = [];
+  const conditions: ReturnType<typeof eq>[] = [isNull(productsTable.luxuryGroupId) as ReturnType<typeof eq>];
 
   if (params.success && params.data.category) {
     conditions.push(eq(productsTable.category, params.data.category));
   }
   if (params.success && params.data.search) {
     const term = `%${params.data.search}%`;
-    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))!);
+    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))! as ReturnType<typeof eq>);
   }
 
   const products = await db
     .select()
     .from(productsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined);
+    .where(and(...conditions));
 
   res.json(ListProductsResponse.parse(products.map(mapProduct)));
 });
@@ -103,20 +106,20 @@ function buildMatchPairs(products: (typeof productsTable.$inferSelect)[]) {
 
 router.get("/matches", async (req, res): Promise<void> => {
   const params = ListMatchesQueryParams.safeParse(req.query);
-  const conditions = [];
+  const conditions: ReturnType<typeof eq>[] = [isNull(productsTable.luxuryGroupId) as ReturnType<typeof eq>];
 
   if (params.success && params.data.category) {
     conditions.push(eq(productsTable.category, params.data.category));
   }
   if (params.success && params.data.search) {
     const term = `%${params.data.search}%`;
-    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))!);
+    conditions.push(or(ilike(productsTable.name, term), ilike(productsTable.brand, term))! as ReturnType<typeof eq>);
   }
 
   const products = await db
     .select()
     .from(productsTable)
-    .where(conditions.length > 0 ? and(...conditions) : undefined);
+    .where(and(...conditions));
 
   res.json(ListMatchesResponse.parse(buildMatchPairs(products)));
 });
@@ -155,7 +158,11 @@ router.get("/categories/summary", async (_req, res): Promise<void> => {
 });
 
 router.get("/trending", async (_req, res): Promise<void> => {
-  const products = await db.select().from(productsTable).orderBy(productsTable.matchScore);
+  const products = await db
+    .select()
+    .from(productsTable)
+    .where(isNull(productsTable.luxuryGroupId))
+    .orderBy(productsTable.matchScore);
   res.json(GetTrendingResponse.parse(buildMatchPairs(products)));
 });
 

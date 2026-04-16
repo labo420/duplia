@@ -15,7 +15,9 @@ export type ProductCategory =
 export const ProductCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
-  Profumi: "Profumi",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
 } as const;
 
 export type ProductType = (typeof ProductType)[keyof typeof ProductType];
@@ -23,6 +25,19 @@ export type ProductType = (typeof ProductType)[keyof typeof ProductType];
 export const ProductType = {
   Luxury: "Luxury",
   Dupe: "Dupe",
+} as const;
+
+/**
+ * @nullable
+ */
+export type ProductDupeTier =
+  | (typeof ProductDupeTier)[keyof typeof ProductDupeTier]
+  | null;
+
+export const ProductDupeTier = {
+  budget: "budget",
+  "mid-range": "mid-range",
+  "premium-dupe": "premium-dupe",
 } as const;
 
 export interface Product {
@@ -42,6 +57,12 @@ export interface Product {
   unitaMisura: string | null;
   /** @nullable */
   pricePerUnit: number | null;
+  /** @nullable */
+  dupeTier: ProductDupeTier;
+  /** @nullable */
+  luxuryGroupId: number | null;
+  /** @nullable */
+  aiMatchReason: string | null;
 }
 
 export interface ProductMatch {
@@ -59,13 +80,31 @@ export interface CategorySummary {
   count: number;
 }
 
+export interface AiSearchBody {
+  query: string;
+}
+
+export interface AiSearchResult {
+  luxuryGroupId: number;
+  luxury: Product;
+  dupes: Product[];
+  lastAiCheckedAt: string;
+  isFromCache: boolean;
+}
+
+export interface AiSearchNotFound {
+  message: string;
+}
+
 export type CreateProductBodyCategory =
   (typeof CreateProductBodyCategory)[keyof typeof CreateProductBodyCategory];
 
 export const CreateProductBodyCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
-  Profumi: "Profumi",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
 } as const;
 
 export type CreateProductBodyType =
@@ -103,7 +142,9 @@ export type ListProductsCategory =
 export const ListProductsCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
-  Profumi: "Profumi",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
 } as const;
 
 export type ListMatchesParams = {
@@ -117,5 +158,7 @@ export type ListMatchesCategory =
 export const ListMatchesCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
-  Profumi: "Profumi",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
 } as const;

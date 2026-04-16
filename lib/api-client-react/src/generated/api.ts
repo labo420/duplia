@@ -17,6 +17,9 @@ import type {
 } from "@tanstack/react-query";
 
 import type {
+  AiSearchBody,
+  AiSearchNotFound,
+  AiSearchResult,
   CategorySummary,
   CreateProductBody,
   HealthStatus,
@@ -532,6 +535,92 @@ export function useGetTrending<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary AI-powered product search — finds a luxury product and generates 3 dupes by tier
+ */
+export const getAiSearchUrl = () => {
+  return `/api/ai/search`;
+};
+
+export const aiSearch = async (
+  aiSearchBody: AiSearchBody,
+  options?: RequestInit,
+): Promise<AiSearchResult> => {
+  return customFetch<AiSearchResult>(getAiSearchUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(aiSearchBody),
+  });
+};
+
+export const getAiSearchMutationOptions = <
+  TError = ErrorType<AiSearchNotFound | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiSearch>>,
+    TError,
+    { data: BodyType<AiSearchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof aiSearch>>,
+  TError,
+  { data: BodyType<AiSearchBody> },
+  TContext
+> => {
+  const mutationKey = ["aiSearch"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof aiSearch>>,
+    { data: BodyType<AiSearchBody> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return aiSearch(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AiSearchMutationResult = NonNullable<
+  Awaited<ReturnType<typeof aiSearch>>
+>;
+export type AiSearchMutationBody = BodyType<AiSearchBody>;
+export type AiSearchMutationError = ErrorType<AiSearchNotFound | void>;
+
+/**
+ * @summary AI-powered product search — finds a luxury product and generates 3 dupes by tier
+ */
+export const useAiSearch = <
+  TError = ErrorType<AiSearchNotFound | void>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof aiSearch>>,
+    TError,
+    { data: BodyType<AiSearchBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof aiSearch>>,
+  TError,
+  { data: BodyType<AiSearchBody> },
+  TContext
+> => {
+  return useMutation(getAiSearchMutationOptions(options));
+};
 
 /**
  * @summary List all products (admin)

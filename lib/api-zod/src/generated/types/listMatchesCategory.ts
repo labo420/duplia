@@ -12,5 +12,7 @@ export type ListMatchesCategory =
 export const ListMatchesCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
-  Profumi: "Profumi",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
 } as const;

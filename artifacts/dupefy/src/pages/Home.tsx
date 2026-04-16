@@ -1,19 +1,26 @@
-import { useState } from "react";
-import { Search } from "lucide-react";
+import { useState, useRef } from "react";
+import { Search, Sparkles, Loader2, AlertCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MatchCard } from "@/components/match/MatchCard";
+import { AiResultCard } from "@/components/match/AiResultCard";
 import {
   useListMatches,
   useGetCategorySummary,
   useGetTrending,
+  useAiSearch,
 } from "@workspace/api-client-react";
+import type { AiSearchResult } from "@workspace/api-client-react/src/generated/api.schemas";
 
-type Category = "Skincare" | "Makeup" | "Profumi" | undefined;
+type Category = "Skincare" | "Makeup" | "Haircare" | "Bodycare" | "Fragrance" | undefined;
 
 export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category>(undefined);
+  const [aiQuery, setAiQuery] = useState("");
+  const [aiResult, setAiResult] = useState<AiSearchResult | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const lastAiQueryRef = useRef<string>("");
 
   const { data: categorySummary } = useGetCategorySummary();
   const { data: trendingMatches, isLoading: isLoadingTrending } = useGetTrending();
@@ -22,7 +29,48 @@ export default function Home() {
     category: selectedCategory as string | undefined,
   });
 
+  const { mutate: runAiSearch, isPending: isAiSearching } = useAiSearch({
+    mutation: {
+      onSuccess: (data) => {
+        setAiResult(data);
+        setAiError(null);
+      },
+      onError: (err: unknown) => {
+        const errMsg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+          ?? "Prodotto non trovato. Prova con un nome più specifico.";
+        setAiError(errMsg);
+        setAiResult(null);
+      },
+    },
+  });
+
   const isFiltering = !!search || !!selectedCategory;
+
+  function handleAiSearch() {
+    const q = search.trim();
+    if (!q || q === lastAiQueryRef.current) return;
+    lastAiQueryRef.current = q;
+    setAiQuery(q);
+    setAiResult(null);
+    setAiError(null);
+    runAiSearch({ data: { query: q } });
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      handleAiSearch();
+    }
+  }
+
+  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
+    setSearch(e.target.value);
+    if (!e.target.value.trim()) {
+      setAiResult(null);
+      setAiError(null);
+      setAiQuery("");
+      lastAiQueryRef.current = "";
+    }
+  }
 
   return (
     <div className="flex-1 w-full pb-24">
@@ -36,15 +84,35 @@ export default function Home() {
             Scopri le migliori alternative economiche ai prodotti beauty iconici, curate per il mercato europeo.
           </p>
 
-          <div className="max-w-xl mx-auto mt-10 relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-            <Input
-              placeholder="Cerca un prodotto, un brand o un dupe..."
-              className="pl-12 h-14 text-base rounded-full shadow-sm bg-background border-border/40 focus-visible:ring-1"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              data-testid="input-search"
-            />
+          <div className="max-w-xl mx-auto mt-10 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
+              <Input
+                placeholder="Cerca un prodotto, un brand o un dupe..."
+                className="pl-12 pr-36 h-14 text-base rounded-full shadow-sm bg-background border-border/40 focus-visible:ring-1"
+                value={search}
+                onChange={handleSearchChange}
+                onKeyDown={handleKeyDown}
+                data-testid="input-search"
+              />
+              <button
+                onClick={handleAiSearch}
+                disabled={!search.trim() || isAiSearching}
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
+                style={{ background: "linear-gradient(135deg, hsl(345 55% 32%), hsl(345 55% 26%))" }}
+                data-testid="button-ai-search"
+              >
+                {isAiSearching ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4" />
+                )}
+                {isAiSearching ? "Analisi..." : "AI"}
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground/70 text-center">
+              Premi <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> o clicca <strong>AI</strong> per trovare i dupe con intelligenza artificiale
+            </p>
           </div>
         </div>
       </section>
@@ -81,8 +149,39 @@ export default function Home() {
           ))}
         </section>
 
+        {/* AI Search Result */}
+        {isAiSearching && (
+          <section className="space-y-4" data-testid="section-ai-loading">
+            <div className="flex items-center gap-3">
+              <Loader2 className="w-5 h-5 animate-spin" style={{ color: "hsl(345 55% 32%)" }} />
+              <h2 className="text-xl font-serif font-bold tracking-tight">
+                L'AI sta analizzando &ldquo;{search}&rdquo;...
+              </h2>
+            </div>
+            <div className="rounded-3xl border border-border/40 p-8 bg-muted/20 animate-pulse" />
+          </section>
+        )}
+
+        {aiError && !isAiSearching && (
+          <section className="space-y-4" data-testid="section-ai-error">
+            <div className="flex items-center gap-3 p-5 rounded-2xl bg-destructive/5 border border-destructive/20">
+              <AlertCircle className="w-5 h-5 text-destructive shrink-0" />
+              <p className="text-sm text-destructive">{aiError}</p>
+            </div>
+          </section>
+        )}
+
+        {aiResult && !isAiSearching && (
+          <section className="space-y-4" data-testid="section-ai-result">
+            <h2 className="text-2xl font-serif font-bold tracking-tight">
+              Dupe trovati con AI
+            </h2>
+            <AiResultCard result={aiResult} query={aiQuery} />
+          </section>
+        )}
+
         {/* Trend del Momento */}
-        {!isFiltering && (
+        {!isFiltering && !aiResult && !isAiSearching && (
           <section className="space-y-6">
             <h2 className="text-2xl font-serif font-bold tracking-tight">Trend del Momento</h2>
             {isLoadingTrending ? (
@@ -105,7 +204,7 @@ export default function Home() {
         <section className="space-y-6">
           <h2 className="text-2xl font-serif font-bold tracking-tight">
             {search
-              ? "Risultati della ricerca"
+              ? "Risultati nella libreria"
               : selectedCategory
               ? `Tutto in ${selectedCategory}`
               : "Scopri i Dupe"}
@@ -117,9 +216,16 @@ export default function Home() {
                 <Skeleton key={i} className="h-[440px] rounded-3xl" />
               ))}
             </div>
-          ) : matches?.length === 0 ? (
+          ) : matches?.length === 0 && !search ? (
             <div className="py-24 text-center text-muted-foreground rounded-3xl border border-dashed border-border">
               Nessun risultato trovato.
+            </div>
+          ) : matches?.length === 0 && search ? (
+            <div className="py-16 text-center space-y-4 rounded-3xl border border-dashed border-border">
+              <p className="text-muted-foreground">Nessun risultato nella libreria per &ldquo;{search}&rdquo;.</p>
+              <p className="text-sm text-muted-foreground/70">
+                Premi <strong>AI</strong> in alto oppure <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> per cercarlo con l'intelligenza artificiale.
+              </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">

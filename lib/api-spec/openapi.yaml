@@ -14,6 +14,8 @@ tags:
     description: Product operations
   - name: admin
     description: Admin operations
+  - name: ai
+    description: AI-powered operations
 paths:
   /healthz:
     get:
@@ -37,7 +39,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [Skincare, Makeup, Profumi]
+            enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
         - name: search
           in: query
           schema:
@@ -61,7 +63,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [Skincare, Makeup, Profumi]
+            enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
         - name: search
           in: query
           schema:
@@ -123,6 +125,32 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ProductMatch"
+  /ai/search:
+    post:
+      operationId: aiSearch
+      tags: [ai]
+      summary: AI-powered product search — finds a luxury product and generates 3 dupes by tier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSearchBody"
+      responses:
+        "200":
+          description: AI search result with luxury product and 3 tier dupes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSearchResult"
+        "404":
+          description: Product not found by AI
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSearchNotFound"
+        "500":
+          description: AI service error
   /admin/products:
     get:
       operationId: adminListProducts
@@ -222,7 +250,7 @@ components:
           type: string
         category:
           type: string
-          enum: [Skincare, Makeup, Profumi]
+          enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
         type:
           type: string
           enum: [Luxury, Dupe]
@@ -238,6 +266,13 @@ components:
         pricePerUnit:
           type: ["number", "null"]
           format: float
+        dupeTier:
+          type: ["string", "null"]
+          enum: [budget, mid-range, premium-dupe, null]
+        luxuryGroupId:
+          type: ["integer", "null"]
+        aiMatchReason:
+          type: ["string", "null"]
       required:
         - id
         - name
@@ -252,6 +287,9 @@ components:
         - formato
         - unitaMisura
         - pricePerUnit
+        - dupeTier
+        - luxuryGroupId
+        - aiMatchReason
     ProductMatch:
       type: object
       properties:
@@ -289,6 +327,42 @@ components:
       required:
         - category
         - count
+    AiSearchBody:
+      type: object
+      properties:
+        query:
+          type: string
+      required:
+        - query
+    AiSearchResult:
+      type: object
+      properties:
+        luxuryGroupId:
+          type: integer
+        luxury:
+          $ref: "#/components/schemas/Product"
+        dupes:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        lastAiCheckedAt:
+          type: string
+          format: date-time
+        isFromCache:
+          type: boolean
+      required:
+        - luxuryGroupId
+        - luxury
+        - dupes
+        - lastAiCheckedAt
+        - isFromCache
+    AiSearchNotFound:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
     CreateProductBody:
       type: object
       properties:
@@ -305,7 +379,7 @@ components:
           type: string
         category:
           type: string
-          enum: [Skincare, Makeup, Profumi]
+          enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
         type:
           type: string
           enum: [Luxury, Dupe]
