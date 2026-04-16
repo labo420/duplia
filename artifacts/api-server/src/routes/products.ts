@@ -138,13 +138,50 @@ router.get("/matches/:matchId", async (req, res): Promise<void> => {
     .from(productsTable)
     .where(eq(productsTable.matchId, params.data.matchId));
 
-  const matches = buildMatchPairs(products);
-  if (matches.length === 0) {
-    res.status(404).json({ error: "Match not found" });
+  const luxury = products.find((p) => p.type === "Luxury");
+  const dupe = products.find((p) => p.type === "Dupe");
+
+  if (luxury && dupe) {
+    const matches = buildMatchPairs(products);
+    if (matches.length === 0) {
+      res.status(404).json({ error: "Match not found" });
+      return;
+    }
+    res.json(GetMatchResponse.parse(matches[0]));
     return;
   }
 
-  res.json(GetMatchResponse.parse(matches[0]));
+  if (dupe?.luxuryGroupId) {
+    const [groupLuxury] = await db
+      .select()
+      .from(productsTable)
+      .where(
+        and(
+          eq(productsTable.luxuryGroupId, dupe.luxuryGroupId),
+          eq(productsTable.type, "Luxury")
+        )
+      )
+      .limit(1);
+
+    if (groupLuxury) {
+      const priceDiff = groupLuxury.price - dupe.price;
+      const savingsPercent = (priceDiff / groupLuxury.price) * 100;
+      res.json(
+        GetMatchResponse.parse({
+          matchId: params.data.matchId,
+          category: groupLuxury.category,
+          luxury: mapProduct(groupLuxury),
+          dupe: mapProduct(dupe),
+          matchScore: dupe.matchScore,
+          priceDifference: Math.round(priceDiff * 100) / 100,
+          savingsPercent: Math.round(savingsPercent),
+        })
+      );
+      return;
+    }
+  }
+
+  res.status(404).json({ error: "Match not found" });
 });
 
 router.get("/categories/summary", async (_req, res): Promise<void> => {

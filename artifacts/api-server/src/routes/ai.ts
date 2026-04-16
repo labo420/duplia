@@ -83,33 +83,33 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
 
   const now = new Date();
   const newGroupId = await getNextGroupId();
+  const luxuryMatchId = await getNextMatchId();
 
-  const savedLuxuries: (typeof productsTable.$inferSelect)[] = [];
+  const [savedLuxury] = await db
+    .insert(productsTable)
+    .values({
+      name: aiResult.luxury.name,
+      brand: aiResult.luxury.brand,
+      price: aiResult.luxury.price,
+      imageUrl: aiResult.luxury.imageUrl,
+      affiliateLink: "",
+      category: aiResult.luxury.category,
+      type: "Luxury",
+      matchId: luxuryMatchId,
+      matchScore: 100,
+      formato: aiResult.luxury.formato ?? null,
+      unitaMisura: aiResult.luxury.unitaMisura ?? null,
+      dupeTier: null,
+      lastAiCheckedAt: now,
+      luxuryGroupId: newGroupId,
+      aiMatchReason: null,
+    })
+    .returning();
+
   const savedDupes: (typeof productsTable.$inferSelect)[] = [];
 
   for (const dupe of aiResult.dupes) {
-    const matchId = await getNextMatchId();
-
-    const [savedLuxury] = await db
-      .insert(productsTable)
-      .values({
-        name: aiResult.luxury.name,
-        brand: aiResult.luxury.brand,
-        price: aiResult.luxury.price,
-        imageUrl: aiResult.luxury.imageUrl,
-        affiliateLink: "",
-        category: aiResult.luxury.category,
-        type: "Luxury",
-        matchId,
-        matchScore: 100,
-        formato: aiResult.luxury.formato ?? null,
-        unitaMisura: aiResult.luxury.unitaMisura ?? null,
-        dupeTier: null,
-        lastAiCheckedAt: now,
-        luxuryGroupId: newGroupId,
-        aiMatchReason: null,
-      })
-      .returning();
+    const dupeMatchId = await getNextMatchId();
 
     const [savedDupe] = await db
       .insert(productsTable)
@@ -121,7 +121,7 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
         affiliateLink: "",
         category: (dupe.category ?? aiResult.luxury.category) as typeof aiResult.luxury.category,
         type: "Dupe",
-        matchId,
+        matchId: dupeMatchId,
         matchScore: dupe.matchScore ?? 85,
         formato: dupe.formato ?? null,
         unitaMisura: dupe.unitaMisura ?? null,
@@ -132,18 +132,17 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
       })
       .returning();
 
-    savedLuxuries.push(savedLuxury);
     savedDupes.push(savedDupe);
   }
 
   logger.info(
-    { query, luxuryGroupId: newGroupId, dupesCount: savedDupes.length },
-    "AI search result saved"
+    { query, luxuryGroupId: newGroupId, luxuryMatchId, dupesCount: savedDupes.length },
+    "AI search result saved (1 luxury + 3 dupes)"
   );
 
   return {
     luxuryGroupId: newGroupId,
-    luxury: mapProduct(savedLuxuries[0]),
+    luxury: mapProduct(savedLuxury),
     dupes: savedDupes.map(mapProduct),
     lastAiCheckedAt: now.toISOString(),
   };
