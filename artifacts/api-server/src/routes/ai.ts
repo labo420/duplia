@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, and, ilike, desc, isNull, sql, or } from "drizzle-orm";
+import { eq, and, ilike, desc, isNull, isNotNull, sql, or, max } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import { AiSearchBody } from "@workspace/api-zod";
 import { searchProductWithAI } from "../lib/ai-service";
@@ -59,11 +59,10 @@ async function getNextMatchId(): Promise<number> {
 
 async function getNextGroupId(): Promise<number> {
   const result = await db
-    .select({ luxuryGroupId: productsTable.luxuryGroupId })
+    .select({ maxGroupId: max(productsTable.luxuryGroupId) })
     .from(productsTable)
-    .orderBy(desc(productsTable.luxuryGroupId))
-    .limit(1);
-  return (result[0]?.luxuryGroupId ?? 0) + 1;
+    .where(isNotNull(productsTable.luxuryGroupId));
+  return (result[0]?.maxGroupId ?? 0) + 1;
 }
 
 interface SavedAiGroup {
@@ -165,6 +164,7 @@ router.post("/ai/search", async (req, res): Promise<void> => {
       .where(
         and(
           eq(productsTable.type, "Luxury"),
+          isNotNull(productsTable.luxuryGroupId),
           or(
             ilike(productsTable.name, `%${q}%`),
             ilike(productsTable.brand, `%${q}%`),
@@ -172,6 +172,7 @@ router.post("/ai/search", async (req, res): Promise<void> => {
           )
         )
       )
+      .orderBy(desc(productsTable.lastAiCheckedAt))
       .limit(1);
 
     const foundLuxury = existingLuxury[0];
