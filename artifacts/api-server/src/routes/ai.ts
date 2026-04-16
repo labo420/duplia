@@ -158,6 +158,12 @@ router.post("/ai/search", async (req, res): Promise<void> => {
 
   try {
     const q = query.trim();
+
+    if (q.length < 3) {
+      res.status(400).json({ error: "La ricerca deve contenere almeno 3 caratteri." });
+      return;
+    }
+
     const existingLuxury = await db
       .select()
       .from(productsTable)
@@ -166,9 +172,8 @@ router.post("/ai/search", async (req, res): Promise<void> => {
           eq(productsTable.type, "Luxury"),
           isNotNull(productsTable.luxuryGroupId),
           or(
-            ilike(productsTable.name, `%${q}%`),
-            ilike(productsTable.brand, `%${q}%`),
-            ilike(sql`${productsTable.brand} || ' ' || ${productsTable.name}`, `%${q}%`)
+            ilike(sql`${productsTable.brand} || ' ' || ${productsTable.name}`, `%${q}%`),
+            ilike(productsTable.name, `${q}%`)
           )
         )
       )
