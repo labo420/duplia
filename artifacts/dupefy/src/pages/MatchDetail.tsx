@@ -1,6 +1,7 @@
 import { useParams, Link } from "wouter";
 import { ArrowLeft, ExternalLink, ShieldCheck, Sparkles, Leaf, Scale } from "lucide-react";
-import { useGetMatch, useListMatches, getGetMatchQueryKey } from "@workspace/api-client-react";
+import { useGetMatch, useListMatches, getGetMatchQueryKey, getListMatchesQueryKey } from "@workspace/api-client-react";
+import type { ListMatchesCategory } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ProductImage } from "@/components/match/ProductImage";
@@ -71,9 +72,10 @@ export default function MatchDetail() {
     query: { enabled: !!matchId, queryKey: getGetMatchQueryKey(matchId) },
   });
 
+  const listMatchesParams = { category: match?.category as ListMatchesCategory | undefined };
   const { data: allMatches } = useListMatches(
-    { category: match?.category as string | undefined },
-    { query: { enabled: !!match?.category } }
+    listMatchesParams,
+    { query: { enabled: !!match?.category, queryKey: getListMatchesQueryKey(listMatchesParams) } }
   );
 
   const alternatives = allMatches?.filter((m) => m.matchId !== matchId).slice(0, 2) ?? [];

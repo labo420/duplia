@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Sparkles, ShoppingBag } from "lucide-react";
-import { AiSearchResult } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { AiSearchResult } from "@workspace/api-client-react";
 import { ProductImage } from "./ProductImage";
 
 const TIER_CONFIG = {

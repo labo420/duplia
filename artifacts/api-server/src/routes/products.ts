@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { eq, and, ilike, or, sql, isNull, type SQL } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import {
@@ -19,7 +19,7 @@ const router: IRouter = Router();
 
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin123";
 
-function requireAdmin(req: Parameters<Parameters<typeof router.use>[0]>[0], res: Parameters<Parameters<typeof router.use>[0]>[1], next: Parameters<Parameters<typeof router.use>[0]>[2]) {
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
   const pwd = req.headers["x-admin-password"];
   if (pwd !== ADMIN_PASSWORD) {
     res.status(401).json({ error: "Unauthorized" });

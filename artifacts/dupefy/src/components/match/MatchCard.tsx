@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { ProductMatch } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { ProductMatch } from "@workspace/api-client-react";
 import { ProductImage } from "./ProductImage";
 
 interface MatchCardProps {

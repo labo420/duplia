@@ -10,7 +10,7 @@ import {
   useGetTrending,
   useAiSearch,
 } from "@workspace/api-client-react";
-import type { AiSearchResult } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { AiSearchResult, ListMatchesCategory } from "@workspace/api-client-react";
 
 type Category = "Skincare" | "Makeup" | "Haircare" | "Bodycare" | "Fragrance" | undefined;
 
@@ -26,7 +26,7 @@ export default function Home() {
   const { data: trendingMatches, isLoading: isLoadingTrending } = useGetTrending();
   const { data: matches, isLoading: isLoadingMatches } = useListMatches({
     search: search || undefined,
-    category: selectedCategory as string | undefined,
+    category: selectedCategory as ListMatchesCategory | undefined,
   });
 
   const { mutate: runAiSearch, isPending: isAiSearching } = useAiSearch({
