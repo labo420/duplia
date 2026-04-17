@@ -255,6 +255,41 @@ export const ListLuxuryProductsResponse = zod.array(
 );
 
 /**
+ * @summary Find luxury products similar to a query (fuzzy match on brand+name)
+ */
+export const listSimilarLuxuryProductsQueryQMin = 2;
+
+export const listSimilarLuxuryProductsQueryLimitMax = 20;
+
+export const ListSimilarLuxuryProductsQueryParams = zod.object({
+  q: zod.coerce.string().min(listSimilarLuxuryProductsQueryQMin),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(listSimilarLuxuryProductsQueryLimitMax)
+    .optional(),
+});
+
+export const ListSimilarLuxuryProductsResponseItem = zod.object({
+  id: zod.number(),
+  brand: zod.string(),
+  name: zod.string(),
+  category: zod.enum([
+    "Skincare",
+    "Makeup",
+    "Haircare",
+    "Bodycare",
+    "Fragrance",
+  ]),
+  imageUrl: zod.string(),
+  price: zod.number().nullable(),
+  isAnalyzed: zod.boolean(),
+});
+export const ListSimilarLuxuryProductsResponse = zod.array(
+  ListSimilarLuxuryProductsResponseItem,
+);
+
+/**
  * @summary Get aggregate stats for social proof
  */
 export const GetStatsResponse = zod.object({
@@ -435,6 +470,8 @@ export const AiSearchResponse = zod.object({
   ),
   lastAiCheckedAt: zod.coerce.date(),
   isFromCache: zod.boolean(),
+  isBestGuess: zod.boolean(),
+  interpretedAs: zod.string().nullable(),
 });
 
 /**

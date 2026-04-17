@@ -136,6 +136,31 @@ export interface AiSearchResult {
   dupes: Product[];
   lastAiCheckedAt: string;
   isFromCache: boolean;
+  isBestGuess: boolean;
+  /** @nullable */
+  interpretedAs: string | null;
+}
+
+export type SimilarLuxuryProductCategory =
+  (typeof SimilarLuxuryProductCategory)[keyof typeof SimilarLuxuryProductCategory];
+
+export const SimilarLuxuryProductCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
+} as const;
+
+export interface SimilarLuxuryProduct {
+  id: number;
+  brand: string;
+  name: string;
+  category: SimilarLuxuryProductCategory;
+  imageUrl: string;
+  /** @nullable */
+  price: number | null;
+  isAnalyzed: boolean;
 }
 
 export interface AiSearchNotFound {
@@ -223,6 +248,18 @@ export const ListLuxuryProductsCategory = {
   Bodycare: "Bodycare",
   Fragrance: "Fragrance",
 } as const;
+
+export type ListSimilarLuxuryProductsParams = {
+  /**
+   * @minLength 2
+   */
+  q: string;
+  /**
+   * @minimum 1
+   * @maximum 20
+   */
+  limit?: number;
+};
 
 export type GetAiSuggestionsParams = {
   /**

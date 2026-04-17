@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
-import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, Lightbulb } from "lucide-react";
 import { AiResultCard } from "@/components/match/AiResultCard";
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
+import { SimilarProducts } from "@/components/search/SimilarProducts";
 import { useAiSearch } from "@workspace/api-client-react";
 import { useRecentSearches } from "@/hooks/use-recent-searches";
 import type { AiSearchResult } from "@workspace/api-client-react";
@@ -151,11 +152,39 @@ export default function SearchResults() {
           </section>
         )}
 
+        {/* Best-guess banner */}
+        {aiResult && aiResult.isBestGuess && !isAiSearching && (
+          <div
+            className="flex items-start gap-3 p-4 rounded-2xl border"
+            style={{
+              background: "hsl(38 90% 95%)",
+              borderColor: "hsl(38 80% 75%)",
+            }}
+            data-testid="banner-best-guess"
+          >
+            <Lightbulb
+              className="w-5 h-5 shrink-0 mt-0.5"
+              style={{ color: "hsl(38 80% 35%)" }}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: "hsl(38 80% 25%)" }}>
+                Non abbiamo trovato esattamente &ldquo;{q}&rdquo;, ma il nostro team ha
+                selezionato un&apos;alternativa simile che potrebbe interessarti:
+              </p>
+              {aiResult.interpretedAs && (
+                <p className="text-xs mt-1" style={{ color: "hsl(38 60% 35%)" }}>
+                  Interpretato come: <em>{aiResult.interpretedAs}</em>
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Results */}
         {aiResult && !isAiSearching && (
           <section className="space-y-4" data-testid="section-ai-result">
             <h2 className="text-2xl font-serif font-bold tracking-tight">
-              Match verificati per te
+              {aiResult.isBestGuess ? "Una possibile alternativa per te" : "Match verificati per te"}
             </h2>
             <AiResultCard result={aiResult} query={q} />
           </section>
@@ -167,6 +196,9 @@ export default function SearchResults() {
             <p className="text-sm">Avvio ricerca per &ldquo;{q}&rdquo;…</p>
           </section>
         )}
+
+        {/* Always show similar products from catalog */}
+        {!isAiSearching && q && <SimilarProducts query={q} />}
 
       </div>
     </div>

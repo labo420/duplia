@@ -13,4 +13,7 @@ export interface AiSearchResult {
   dupes: Product[];
   lastAiCheckedAt: Date;
   isFromCache: boolean;
+  isBestGuess: boolean;
+  /** @nullable */
+  interpretedAs: string | null;
 }

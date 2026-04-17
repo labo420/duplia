@@ -28,6 +28,8 @@ export interface AiProduct {
 export interface AiSearchPayload {
   luxury: AiProduct;
   dupes: AiProduct[];
+  isBestGuess: boolean;
+  interpretedAs: string | null;
 }
 
 const SYSTEM_PROMPT = `Sei un esperto beauty editor specializzato nel mercato europeo. 
@@ -47,6 +49,14 @@ Regole importanti:
 - matchReason deve essere una frase breve (max 120 caratteri) che spiega perché è un buon dupe.
 - Quantità di dupe: punta SEMPRE a includere tutte e 3 le fasce quando possibile (questo è l'esito preferito). È accettabile restituire 1 o 2 dupe se per il prodotto richiesto non esiste un'alternativa realistica in una o più fasce — tipico per profumi di lusso, fragranze di nicchia o prodotti skincare molto specializzati che non hanno dupe budget tra €5 e €15. NON inventare dupe irrealistici solo per riempire una fascia: meglio meno dupe ma autentici. La fascia più frequentemente assente è "budget".
 - Ogni dupe deve avere un campo dupeTier valorizzato e diverso dagli altri (massimo uno per fascia: budget, mid-range, premium-dupe).
+
+GESTIONE QUERY VAGHE / PRODOTTI NON IDENTIFICATI:
+Se NON riesci a identificare un prodotto specifico (query troppo vaga, descrittiva, o prodotto non riconosciuto), NON rispondere con found:false. Invece:
+1. Deduce dalla query la categoria/tipologia di prodotto cercata (es. "rossetto liquido nude" → liquid lipstick nude; "siero vitamina C luxury" → vitamin C serum)
+2. Scegli UN prodotto luxury POPOLARE e iconico in quella categoria che potrebbe rispondere all'esigenza
+3. Restituisci quel prodotto come "luxury" + i suoi dupe nelle 3 fasce (stesse regole)
+4. Imposta isBestGuess: true e interpretedAs con una breve descrizione italiana di cosa hai interpretato (es. "Un rossetto liquido luxury nude popolare", "Un siero alla vitamina C di alta gamma")
+Usa found:false SOLO se la query è completamente incomprensibile (es. "asdfghjkl") o non riguarda il beauty.
 
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
@@ -103,15 +113,21 @@ Rispondi con questo schema JSON esatto:
       "unitaMisura": "ml"
     }
   ],
-  "found": true
+  "found": true,
+  "isBestGuess": false,
+  "interpretedAs": null
 }
 
 L'array "dupes" deve contenere 1, 2 o 3 elementi (preferibilmente 3). Salta la fascia "budget" se non esiste un dupe realistico tra €5 e €15 (es. per profumi di lusso). Ogni elemento deve avere un dupeTier unico.
 
-Se il prodotto non esiste o non riesci a identificarlo con certezza, rispondi:
+Se la query è vaga/descrittiva e non identifichi un prodotto specifico, restituisci comunque uno schema completo (luxury + dupes) basato sulla tua MIGLIORE INTERPRETAZIONE della categoria, impostando "isBestGuess": true e "interpretedAs": "breve descrizione in italiano di cosa hai interpretato".
+
+Solo se la query è completamente incomprensibile (es. caratteri casuali) o non riguarda il beauty, rispondi:
 {"found": false, "message": "Prodotto non trovato"}`;
 
-function validateAiResponse(parsed: unknown): { luxury: AiProduct; dupes: AiProduct[] } | null {
+function validateAiResponse(
+  parsed: unknown
+): { luxury: AiProduct; dupes: AiProduct[]; isBestGuess: boolean; interpretedAs: string | null } | null {
   if (typeof parsed !== "object" || parsed === null) return null;
   const p = parsed as Record<string, unknown>;
 
@@ -167,13 +183,24 @@ function validateAiResponse(parsed: unknown): { luxury: AiProduct; dupes: AiProd
     }
   }
 
+  const isBestGuess = p.isBestGuess === true;
+  const interpretedAs =
+    typeof p.interpretedAs === "string" && p.interpretedAs.trim().length > 0
+      ? p.interpretedAs.trim()
+      : null;
+
   return {
     luxury: p.luxury as AiProduct,
     dupes,
+    isBestGuess,
+    interpretedAs,
   };
 }
 
-async function callAnthropicWithRetry(query: string, attempt = 1): Promise<{ luxury: AiProduct; dupes: AiProduct[] } | null> {
+async function callAnthropicWithRetry(
+  query: string,
+  attempt = 1
+): Promise<{ luxury: AiProduct; dupes: AiProduct[]; isBestGuess: boolean; interpretedAs: string | null } | null> {
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-6",
     max_tokens: 8192,
@@ -219,7 +246,7 @@ export async function searchProductWithAI(query: string): Promise<AiSearchPayloa
     const result = await callAnthropicWithRetry(query);
     if (!result) return null;
 
-    const { luxury, dupes } = result;
+    const { luxury, dupes, isBestGuess, interpretedAs } = result;
 
     const [luxuryImage, ...dupeImages] = await Promise.all([
       resolveProductImageUrl(luxury.imageUrl, luxury.brand, luxury.name, luxury.category),
@@ -231,6 +258,8 @@ export async function searchProductWithAI(query: string): Promise<AiSearchPayloa
     return {
       luxury: { ...luxury, imageUrl: luxuryImage },
       dupes: dupes.map((d, i) => ({ ...d, imageUrl: dupeImages[i] })),
+      isBestGuess,
+      interpretedAs,
     };
   } catch (err) {
     logger.error({ err, query }, "AI search failed");

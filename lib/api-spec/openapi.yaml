@@ -131,6 +131,33 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/LuxuryProduct"
+  /products/similar:
+    get:
+      operationId: listSimilarLuxuryProducts
+      tags: [products]
+      summary: Find luxury products similar to a query (fuzzy match on brand+name)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+      responses:
+        "200":
+          description: List of similar luxury products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SimilarLuxuryProduct"
   /stats:
     get:
       operationId: getStats
@@ -460,12 +487,45 @@ components:
           format: date-time
         isFromCache:
           type: boolean
+        isBestGuess:
+          type: boolean
+        interpretedAs:
+          type: ["string", "null"]
       required:
         - luxuryGroupId
         - luxury
         - dupes
         - lastAiCheckedAt
         - isFromCache
+        - isBestGuess
+        - interpretedAs
+    SimilarLuxuryProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        brand:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
+        imageUrl:
+          type: string
+        price:
+          type: ["number", "null"]
+          format: float
+        isAnalyzed:
+          type: boolean
+      required:
+        - id
+        - brand
+        - name
+        - category
+        - imageUrl
+        - price
+        - isAnalyzed
     AiSearchNotFound:
       type: object
       properties:

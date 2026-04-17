@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Sparkles, ShoppingBag, CheckCircle2 } from "lucide-react";
+import { Sparkles, ShoppingBag, CheckCircle2, Lightbulb } from "lucide-react";
 import type { AiSearchResult } from "@workspace/api-client-react";
 import { ProductImage } from "./ProductImage";
 
@@ -34,6 +34,7 @@ interface AiResultCardProps {
 
 export function AiResultCard({ result, query }: AiResultCardProps) {
   const { luxury, dupes } = result;
+  const isBestGuess = result.isBestGuess === true;
 
   const budgetDupe = dupes.find((d) => d.dupeTier === "budget");
   const midRangeDupe = dupes.find((d) => d.dupeTier === "mid-range");
@@ -62,8 +63,12 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
             border: "1px solid rgba(0,0,0,0.08)",
           }}
         >
-          <Sparkles className="w-4 h-4" style={{ color: "hsl(345 55% 32%)" }} />
-          <span>Risultati Verificati</span>
+          {isBestGuess ? (
+            <Lightbulb className="w-4 h-4" style={{ color: "hsl(38 80% 35%)" }} />
+          ) : (
+            <Sparkles className="w-4 h-4" style={{ color: "hsl(345 55% 32%)" }} />
+          )}
+          <span>{isBestGuess ? "Suggerimento del Team" : "Risultati Verificati"}</span>
         </div>
         <p className="text-sm text-muted-foreground">
           per <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>

@@ -28,9 +28,11 @@ import type {
   ListLuxuryProductsParams,
   ListMatchesParams,
   ListProductsParams,
+  ListSimilarLuxuryProductsParams,
   LuxuryProduct,
   Product,
   ProductMatch,
+  SimilarLuxuryProduct,
   Stats,
 } from "./api.schemas";
 
@@ -555,6 +557,112 @@ export function useListLuxuryProducts<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getListLuxuryProductsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Find luxury products similar to a query (fuzzy match on brand+name)
+ */
+export const getListSimilarLuxuryProductsUrl = (
+  params: ListSimilarLuxuryProductsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/products/similar?${stringifiedParams}`
+    : `/api/products/similar`;
+};
+
+export const listSimilarLuxuryProducts = async (
+  params: ListSimilarLuxuryProductsParams,
+  options?: RequestInit,
+): Promise<SimilarLuxuryProduct[]> => {
+  return customFetch<SimilarLuxuryProduct[]>(
+    getListSimilarLuxuryProductsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListSimilarLuxuryProductsQueryKey = (
+  params?: ListSimilarLuxuryProductsParams,
+) => {
+  return [`/api/products/similar`, ...(params ? [params] : [])] as const;
+};
+
+export const getListSimilarLuxuryProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSimilarLuxuryProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListSimilarLuxuryProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listSimilarLuxuryProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListSimilarLuxuryProductsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listSimilarLuxuryProducts>>
+  > = ({ signal }) =>
+    listSimilarLuxuryProducts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSimilarLuxuryProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSimilarLuxuryProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSimilarLuxuryProducts>>
+>;
+export type ListSimilarLuxuryProductsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Find luxury products similar to a query (fuzzy match on brand+name)
+ */
+
+export function useListSimilarLuxuryProducts<
+  TData = Awaited<ReturnType<typeof listSimilarLuxuryProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params: ListSimilarLuxuryProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listSimilarLuxuryProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSimilarLuxuryProductsQueryOptions(
+    params,
+    options,
+  );
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

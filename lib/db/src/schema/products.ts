@@ -1,4 +1,4 @@
-import { pgTable, text, serial, real, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, real, integer, timestamp, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -25,6 +25,8 @@ export const productsTable = pgTable("products", {
   lastAiCheckedAt: timestamp("last_ai_checked_at"),
   luxuryGroupId: integer("luxury_group_id"),
   aiMatchReason: text("ai_match_reason"),
+  isBestGuess: boolean("is_best_guess").notNull().default(false),
+  interpretedAs: text("interpreted_as"),
 });
 
 export const insertProductSchema = createInsertSchema(productsTable).omit({ id: true });

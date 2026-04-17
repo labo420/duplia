@@ -41,6 +41,16 @@ function mapProduct(p: typeof productsTable.$inferSelect) {
   };
 }
 
+function getGroupIsBestGuess(products: (typeof productsTable.$inferSelect)[]): boolean {
+  const luxury = products.find((p) => p.type === "Luxury");
+  return luxury?.isBestGuess ?? false;
+}
+
+function getGroupInterpretedAs(products: (typeof productsTable.$inferSelect)[]): string | null {
+  const luxury = products.find((p) => p.type === "Luxury");
+  return luxury?.interpretedAs ?? null;
+}
+
 function isStale(lastChecked: Date | null | undefined, category: string): boolean {
   if (!lastChecked) return true;
   const daysOld = (Date.now() - lastChecked.getTime()) / (1000 * 60 * 60 * 24);
@@ -70,6 +80,8 @@ interface SavedAiGroup {
   luxury: ReturnType<typeof mapProduct>;
   dupes: ReturnType<typeof mapProduct>[];
   lastAiCheckedAt: string;
+  isBestGuess: boolean;
+  interpretedAs: string | null;
 }
 
 async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAiGroup | null> {
@@ -102,6 +114,8 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
       lastAiCheckedAt: now,
       luxuryGroupId: newGroupId,
       aiMatchReason: null,
+      isBestGuess: aiResult.isBestGuess,
+      interpretedAs: aiResult.interpretedAs,
     })
     .returning();
 
@@ -128,6 +142,8 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
         lastAiCheckedAt: now,
         luxuryGroupId: newGroupId,
         aiMatchReason: dupe.matchReason ?? null,
+        isBestGuess: aiResult.isBestGuess,
+        interpretedAs: aiResult.interpretedAs,
       })
       .returning();
 
@@ -144,6 +160,8 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
     luxury: mapProduct(savedLuxury),
     dupes: savedDupes.map(mapProduct),
     lastAiCheckedAt: now.toISOString(),
+    isBestGuess: aiResult.isBestGuess,
+    interpretedAs: aiResult.interpretedAs,
   };
 }
 
@@ -263,6 +281,8 @@ router.post("/ai/search", async (req, res): Promise<void> => {
           dupes: dupes.map(mapProduct),
           lastAiCheckedAt: luxuries[0].lastAiCheckedAt?.toISOString() ?? new Date().toISOString(),
           isFromCache: true,
+          isBestGuess: getGroupIsBestGuess(groupProducts),
+          interpretedAs: getGroupInterpretedAs(groupProducts),
         };
 
         if (!isStale(foundLuxury.lastAiCheckedAt, foundLuxury.category)) {
@@ -287,7 +307,7 @@ router.post("/ai/search", async (req, res): Promise<void> => {
 
     if (!saved) {
       res.status(404).json({
-        message: "Prodotto non trovato. Prova con un nome più specifico (es. 'Charlotte Tilbury Flawless Filter').",
+        message: "Non siamo riusciti a interpretare la tua ricerca. Dai un'occhiata ai prodotti simili qui sotto o riprova con un nome diverso.",
       });
       return;
     }
