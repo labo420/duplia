@@ -41,6 +41,18 @@ export default function SearchResults() {
     },
   });
 
+  // Dynamic page title
+  useEffect(() => {
+    if (q) {
+      document.title = `${q} — match verificati | Duplia`;
+    } else {
+      document.title = "Duplia";
+    }
+    return () => {
+      document.title = "Duplia";
+    };
+  }, [q]);
+
   // Redirect if no query
   useEffect(() => {
     if (!q) {
