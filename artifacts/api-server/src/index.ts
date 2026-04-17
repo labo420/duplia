@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { runAutoSeed } from "@workspace/db";
 
 const rawPort = process.env["PORT"];
 
@@ -13,6 +14,13 @@ const port = Number(rawPort);
 
 if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
+}
+
+// Auto-seed the database on first boot if it's empty
+try {
+  await runAutoSeed();
+} catch (err) {
+  logger.warn({ err }, "[seed] Auto-seed failed — continuing startup anyway");
 }
 
 app.listen(port, (err) => {
