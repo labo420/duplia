@@ -129,7 +129,7 @@ paths:
     post:
       operationId: aiSearch
       tags: [ai]
-      summary: AI-powered product search — finds a luxury product and generates 3 dupes by tier
+      summary: AI-powered product search — finds a luxury product and generates 1-3 dupes by tier
       requestBody:
         required: true
         content:

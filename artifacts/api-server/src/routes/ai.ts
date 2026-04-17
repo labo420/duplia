@@ -136,7 +136,7 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
 
   logger.info(
     { query, luxuryGroupId: newGroupId, luxuryMatchId, dupesCount: savedDupes.length },
-    "AI search result saved (1 luxury + 3 dupes)"
+    "AI search result saved (1 luxury + 1-3 dupes)"
   );
 
   return {
