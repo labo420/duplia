@@ -233,11 +233,11 @@ export default function SearchResults() {
               <Search className="w-6 h-6" style={{ color: "hsl(38 80% 35%)" }} />
             </div>
             <h2 className="text-xl font-serif font-bold tracking-tight">
-              Proviamo insieme
+              Proviamo insieme: raffina la ricerca
             </h2>
             <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-              Raffina la ricerca con il nome del brand o del prodotto specifico che hai
-              in mente. Puoi anche esplorare i prodotti simili qui sotto.
+              Inserisci il nome del brand o del prodotto specifico che hai in mente.
+              Puoi anche esplorare i prodotti simili qui sotto.
             </p>
           </section>
         )}
