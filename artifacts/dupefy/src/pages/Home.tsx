@@ -5,6 +5,7 @@ import { StatsStrip } from "@/components/home/StatsStrip";
 import { CategoryCards } from "@/components/home/CategoryCards";
 import { LuxuryCatalogGrid } from "@/components/home/LuxuryCatalogGrid";
 import { HowItWorks } from "@/components/home/HowItWorks";
+import { useRecentSearches } from "@/hooks/use-recent-searches";
 
 type Category = "Skincare" | "Makeup" | "Haircare" | "Bodycare" | "Fragrance" | undefined;
 
@@ -12,6 +13,7 @@ export default function Home() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category>(undefined);
+  const { recentSearches, clearRecentSearches } = useRecentSearches();
 
   function handleAiSearch(q?: string) {
     const query = (q ?? search).trim();
@@ -45,6 +47,8 @@ export default function Home() {
               onChange={handleSearchChange}
               onSearch={handleAiSearch}
               isSearching={false}
+              recentSearches={recentSearches}
+              onClearRecentSearches={clearRecentSearches}
             />
             <p className="text-xs text-muted-foreground/70 text-center">
               Digita 2+ lettere per i suggerimenti, poi premi <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> o clicca <strong>AI</strong>

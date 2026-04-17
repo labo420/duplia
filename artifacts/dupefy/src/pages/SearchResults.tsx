@@ -4,6 +4,7 @@ import { Loader2, AlertCircle, ArrowLeft } from "lucide-react";
 import { AiResultCard } from "@/components/match/AiResultCard";
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
 import { useAiSearch } from "@workspace/api-client-react";
+import { useRecentSearches } from "@/hooks/use-recent-searches";
 import type { AiSearchResult } from "@workspace/api-client-react";
 
 const LOADING_MESSAGES = [
@@ -25,11 +26,14 @@ export default function SearchResults() {
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const lastFiredQueryRef = useRef<string>("");
 
+  const { recentSearches, addRecentSearch, clearRecentSearches } = useRecentSearches();
+
   const { mutate: runAiSearch, isPending: isAiSearching } = useAiSearch({
     mutation: {
-      onSuccess: (data) => {
+      onSuccess: (data, variables) => {
         setAiResult(data);
         setAiError(null);
+        addRecentSearch(variables.data.query);
       },
       onError: (err: unknown) => {
         const errMsg =
@@ -111,6 +115,8 @@ export default function SearchResults() {
               onChange={setSearchInput}
               onSearch={handleNewSearch}
               isSearching={isAiSearching}
+              recentSearches={recentSearches}
+              onClearRecentSearches={clearRecentSearches}
             />
           </div>
         </div>

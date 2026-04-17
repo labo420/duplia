@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Search, Loader2, Sparkles, Clock } from "lucide-react";
+import { Search, Loader2, Sparkles, Clock, X } from "lucide-react";
 import { useGetAiSuggestions } from "@workspace/api-client-react";
 import type { AiSuggestion } from "@workspace/api-client-react";
 
@@ -16,6 +16,8 @@ interface SearchAutocompleteProps {
   onChange: (value: string) => void;
   onSearch: (query: string) => void;
   isSearching: boolean;
+  recentSearches?: string[];
+  onClearRecentSearches?: () => void;
 }
 
 export function SearchAutocomplete({
@@ -23,10 +25,13 @@ export function SearchAutocomplete({
   onChange,
   onSearch,
   isSearching,
+  recentSearches = [],
+  onClearRecentSearches,
 }: SearchAutocompleteProps) {
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [showRecent, setShowRecent] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,6 +42,7 @@ export function SearchAutocomplete({
       debounceRef.current = setTimeout(() => {
         setDebouncedQuery(value.trim());
       }, 300);
+      setShowRecent(false);
     } else {
       setDebouncedQuery("");
       setOpen(false);
@@ -59,8 +65,9 @@ export function SearchAutocomplete({
   useEffect(() => {
     if (suggestions.length > 0 && debouncedQuery.length >= 2) {
       setOpen(true);
+      setShowRecent(false);
       setActiveIndex(-1);
-    } else {
+    } else if (debouncedQuery.length >= 2) {
       setOpen(false);
     }
   }, [suggestions, debouncedQuery]);
@@ -69,6 +76,7 @@ export function SearchAutocomplete({
     function handleClickOutside(e: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setOpen(false);
+        setShowRecent(false);
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -80,13 +88,47 @@ export function SearchAutocomplete({
       const fullName = `${suggestion.brand} ${suggestion.name}`;
       onChange(fullName);
       setOpen(false);
+      setShowRecent(false);
       setActiveIndex(-1);
       onSearch(fullName);
     },
     [onChange, onSearch]
   );
 
+  const selectRecentSearch = useCallback(
+    (query: string) => {
+      onChange(query);
+      setShowRecent(false);
+      setOpen(false);
+      setActiveIndex(-1);
+      onSearch(query);
+    },
+    [onChange, onSearch]
+  );
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (showRecent && recentSearches.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setActiveIndex((i) => Math.min(i + 1, recentSearches.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setActiveIndex((i) => Math.max(i - 1, -1));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        if (activeIndex >= 0 && recentSearches[activeIndex]) {
+          selectRecentSearch(recentSearches[activeIndex]);
+        } else {
+          setShowRecent(false);
+          onSearch(value.trim());
+        }
+      } else if (e.key === "Escape") {
+        setShowRecent(false);
+        setActiveIndex(-1);
+      }
+      return;
+    }
+
     if (!open || suggestions.length === 0) {
       if (e.key === "Enter") onSearch(value.trim());
       return;
@@ -112,6 +154,8 @@ export function SearchAutocomplete({
     }
   }
 
+  const dropdownVisible = open || showRecent;
+
   return (
     <div ref={containerRef} className="relative w-full">
       <div className="relative">
@@ -124,22 +168,36 @@ export function SearchAutocomplete({
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
-            if (!e.target.value.trim()) setOpen(false);
+            if (!e.target.value.trim()) {
+              setOpen(false);
+              if (recentSearches.length > 0) {
+                setShowRecent(true);
+                setActiveIndex(-1);
+              }
+            } else {
+              setShowRecent(false);
+            }
           }}
           onKeyDown={handleKeyDown}
           onFocus={() => {
-            if (suggestions.length > 0 && value.trim().length >= 2) setOpen(true);
+            if (suggestions.length > 0 && value.trim().length >= 2) {
+              setOpen(true);
+            } else if (!value.trim() && recentSearches.length > 0) {
+              setShowRecent(true);
+              setActiveIndex(-1);
+            }
           }}
           autoComplete="off"
           data-testid="input-search"
           aria-autocomplete="list"
-          aria-expanded={open}
+          aria-expanded={dropdownVisible}
           aria-haspopup="listbox"
         />
         <button
           type="button"
           onClick={() => {
             setOpen(false);
+            setShowRecent(false);
             onSearch(value.trim());
           }}
           disabled={!value.trim() || isSearching}
@@ -156,6 +214,58 @@ export function SearchAutocomplete({
         </button>
       </div>
 
+      {/* Recent searches dropdown */}
+      {showRecent && recentSearches.length > 0 && (
+        <ul
+          role="listbox"
+          className="absolute left-0 right-0 top-[calc(100%+6px)] z-50 bg-background border border-border/50 rounded-2xl shadow-xl overflow-hidden"
+        >
+          <li className="px-4 py-2 flex items-center justify-between">
+            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+              Ricerche recenti
+            </span>
+            {onClearRecentSearches && (
+              <button
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onClearRecentSearches();
+                  setShowRecent(false);
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+                data-testid="button-clear-recent"
+              >
+                <X className="w-3 h-3" />
+                Cancella
+              </button>
+            )}
+          </li>
+          {recentSearches.map((query, i) => {
+            const isActive = i === activeIndex;
+            return (
+              <li
+                key={query}
+                role="option"
+                aria-selected={isActive}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  selectRecentSearch(query);
+                }}
+                onMouseEnter={() => setActiveIndex(i)}
+                className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors ${
+                  isActive ? "bg-muted" : "hover:bg-muted/60"
+                } border-t border-border/30`}
+                data-testid={`recent-search-${i}`}
+              >
+                <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium truncate">{query}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* AI suggestions dropdown */}
       {open && suggestions.length > 0 && (
         <ul
           role="listbox"
