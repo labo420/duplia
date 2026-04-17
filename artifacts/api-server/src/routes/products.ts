@@ -335,9 +335,11 @@ router.get("/products/similar", async (req, res): Promise<void> => {
       .limit(50);
   }
 
-  // Fallback: if zero token matches (or no tokens), backfill with popular analyzed luxuries
-  if (rows.length === 0) {
-    rows = await fetchPopularLuxuryFallback(limit);
+  // Top-up fallback: ensure we always reach `limit` items by appending popular
+  // analyzed luxuries that aren't already present (dedupe happens below).
+  if (rows.length < limit) {
+    const fillers = await fetchPopularLuxuryFallback(limit * 3);
+    rows = rows.concat(fillers);
   }
 
   // Dedupe by brand|name (prefer the analyzed, non-best-guess entry)
