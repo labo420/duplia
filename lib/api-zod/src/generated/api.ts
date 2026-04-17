@@ -301,7 +301,30 @@ export const GetTrendingResponseItem = zod.object({
 export const GetTrendingResponse = zod.array(GetTrendingResponseItem);
 
 /**
- * @summary AI-powered product search — finds a luxury product and generates 3 dupes by tier
+ * @summary Autocomplete suggestions for luxury products
+ */
+export const getAiSuggestionsQueryQMin = 2;
+
+export const GetAiSuggestionsQueryParams = zod.object({
+  q: zod.coerce.string().min(getAiSuggestionsQueryQMin),
+});
+
+export const GetAiSuggestionsResponseItem = zod.object({
+  brand: zod.string(),
+  name: zod.string(),
+  category: zod.enum([
+    "Skincare",
+    "Makeup",
+    "Haircare",
+    "Bodycare",
+    "Fragrance",
+  ]),
+  isFromCache: zod.boolean(),
+});
+export const GetAiSuggestionsResponse = zod.array(GetAiSuggestionsResponseItem);
+
+/**
+ * @summary AI-powered product search — finds a luxury product and generates 1-3 dupes by tier
  */
 export const AiSearchBody = zod.object({
   query: zod.string(),

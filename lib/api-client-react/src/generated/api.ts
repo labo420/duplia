@@ -20,8 +20,10 @@ import type {
   AiSearchBody,
   AiSearchNotFound,
   AiSearchResult,
+  AiSuggestion,
   CategorySummary,
   CreateProductBody,
+  GetAiSuggestionsParams,
   HealthStatus,
   ListMatchesParams,
   ListProductsParams,
@@ -537,7 +539,104 @@ export function useGetTrending<
 }
 
 /**
- * @summary AI-powered product search — finds a luxury product and generates 3 dupes by tier
+ * @summary Autocomplete suggestions for luxury products
+ */
+export const getGetAiSuggestionsUrl = (params: GetAiSuggestionsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/ai/suggestions?${stringifiedParams}`
+    : `/api/ai/suggestions`;
+};
+
+export const getAiSuggestions = async (
+  params: GetAiSuggestionsParams,
+  options?: RequestInit,
+): Promise<AiSuggestion[]> => {
+  return customFetch<AiSuggestion[]>(getGetAiSuggestionsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetAiSuggestionsQueryKey = (
+  params?: GetAiSuggestionsParams,
+) => {
+  return [`/api/ai/suggestions`, ...(params ? [params] : [])] as const;
+};
+
+export const getGetAiSuggestionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getAiSuggestions>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetAiSuggestionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAiSuggestions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetAiSuggestionsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getAiSuggestions>>
+  > = ({ signal }) => getAiSuggestions(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getAiSuggestions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetAiSuggestionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getAiSuggestions>>
+>;
+export type GetAiSuggestionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Autocomplete suggestions for luxury products
+ */
+
+export function useGetAiSuggestions<
+  TData = Awaited<ReturnType<typeof getAiSuggestions>>,
+  TError = ErrorType<unknown>,
+>(
+  params: GetAiSuggestionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getAiSuggestions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetAiSuggestionsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary AI-powered product search — finds a luxury product and generates 1-3 dupes by tier
  */
 export const getAiSearchUrl = () => {
   return `/api/ai/search`;
@@ -600,7 +699,7 @@ export type AiSearchMutationBody = BodyType<AiSearchBody>;
 export type AiSearchMutationError = ErrorType<AiSearchNotFound | void>;
 
 /**
- * @summary AI-powered product search — finds a luxury product and generates 3 dupes by tier
+ * @summary AI-powered product search — finds a luxury product and generates 1-3 dupes by tier
  */
 export const useAiSearch = <
   TError = ErrorType<AiSearchNotFound | void>,

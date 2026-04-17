@@ -80,6 +80,24 @@ export interface CategorySummary {
   count: number;
 }
 
+export type AiSuggestionCategory =
+  (typeof AiSuggestionCategory)[keyof typeof AiSuggestionCategory];
+
+export const AiSuggestionCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
+} as const;
+
+export interface AiSuggestion {
+  brand: string;
+  name: string;
+  category: AiSuggestionCategory;
+  isFromCache: boolean;
+}
+
 export interface AiSearchBody {
   query: string;
 }
@@ -162,3 +180,10 @@ export const ListMatchesCategory = {
   Bodycare: "Bodycare",
   Fragrance: "Fragrance",
 } as const;
+
+export type GetAiSuggestionsParams = {
+  /**
+   * @minLength 2
+   */
+  q: string;
+};

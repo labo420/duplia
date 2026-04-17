@@ -147,6 +147,61 @@ async function saveAiResult(query: string, oldGroupId?: number): Promise<SavedAi
   };
 }
 
+router.get("/ai/suggestions", async (req, res): Promise<void> => {
+  const q = String(req.query.q ?? "").trim();
+
+  if (q.length < 2) {
+    res.json([]);
+    return;
+  }
+
+  try {
+    const pattern = `%${q}%`;
+
+    const cached = await db
+      .select({
+        brand: productsTable.brand,
+        name: productsTable.name,
+        category: productsTable.category,
+        hasGroup: productsTable.luxuryGroupId,
+      })
+      .from(productsTable)
+      .where(
+        and(
+          eq(productsTable.type, "Luxury"),
+          or(
+            ilike(sql`${productsTable.brand} || ' ' || ${productsTable.name}`, pattern),
+            ilike(productsTable.brand, pattern),
+            ilike(productsTable.name, pattern)
+          )
+        )
+      )
+      .orderBy(desc(productsTable.luxuryGroupId), desc(productsTable.lastAiCheckedAt))
+      .limit(8);
+
+    const seen = new Set<string>();
+    const suggestions: { brand: string; name: string; category: string; isFromCache: boolean }[] = [];
+
+    for (const row of cached) {
+      const key = `${row.brand}|${row.name}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        suggestions.push({
+          brand: row.brand,
+          name: row.name,
+          category: row.category,
+          isFromCache: row.hasGroup !== null,
+        });
+      }
+    }
+
+    res.json(suggestions);
+  } catch (err) {
+    logger.error({ err, q }, "Suggestions route error");
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 router.post("/ai/search", async (req, res): Promise<void> => {
   const bodyParsed = AiSearchBody.safeParse(req.body);
   if (!bodyParsed.success) {

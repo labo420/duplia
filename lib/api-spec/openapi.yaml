@@ -125,6 +125,27 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ProductMatch"
+  /ai/suggestions:
+    get:
+      operationId: getAiSuggestions
+      tags: [ai]
+      summary: Autocomplete suggestions for luxury products
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+      responses:
+        "200":
+          description: List of matching luxury product suggestions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AiSuggestion"
   /ai/search:
     post:
       operationId: aiSearch
@@ -327,6 +348,23 @@ components:
       required:
         - category
         - count
+    AiSuggestion:
+      type: object
+      properties:
+        brand:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
+        isFromCache:
+          type: boolean
+      required:
+        - brand
+        - name
+        - category
+        - isFromCache
     AiSearchBody:
       type: object
       properties:

@@ -1,9 +1,9 @@
 import { useState, useRef } from "react";
-import { Search, Sparkles, Loader2, AlertCircle } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { Loader2, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MatchCard } from "@/components/match/MatchCard";
 import { AiResultCard } from "@/components/match/AiResultCard";
+import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
 import {
   useListMatches,
   useGetCategorySummary,
@@ -46,25 +46,19 @@ export default function Home() {
 
   const isFiltering = !!search || !!selectedCategory;
 
-  function handleAiSearch() {
-    const q = search.trim();
-    if (!q || q === lastAiQueryRef.current) return;
-    lastAiQueryRef.current = q;
-    setAiQuery(q);
+  function handleAiSearch(q?: string) {
+    const query = (q ?? search).trim();
+    if (!query || query === lastAiQueryRef.current) return;
+    lastAiQueryRef.current = query;
+    setAiQuery(query);
     setAiResult(null);
     setAiError(null);
-    runAiSearch({ data: { query: q } });
+    runAiSearch({ data: { query } });
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") {
-      handleAiSearch();
-    }
-  }
-
-  function handleSearchChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setSearch(e.target.value);
-    if (!e.target.value.trim()) {
+  function handleSearchChange(value: string) {
+    setSearch(value);
+    if (!value.trim()) {
       setAiResult(null);
       setAiError(null);
       setAiQuery("");
@@ -85,33 +79,14 @@ export default function Home() {
           </p>
 
           <div className="max-w-xl mx-auto mt-10 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
-              <Input
-                placeholder="Cerca un prodotto, un brand o un dupe..."
-                className="pl-12 pr-36 h-14 text-base rounded-full shadow-sm bg-background border-border/40 focus-visible:ring-1"
-                value={search}
-                onChange={handleSearchChange}
-                onKeyDown={handleKeyDown}
-                data-testid="input-search"
-              />
-              <button
-                onClick={handleAiSearch}
-                disabled={!search.trim() || isAiSearching}
-                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-2 px-4 h-10 rounded-full text-sm font-semibold text-white transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
-                style={{ background: "linear-gradient(135deg, hsl(345 55% 32%), hsl(345 55% 26%))" }}
-                data-testid="button-ai-search"
-              >
-                {isAiSearching ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Sparkles className="w-4 h-4" />
-                )}
-                {isAiSearching ? "Analisi..." : "AI"}
-              </button>
-            </div>
+            <SearchAutocomplete
+              value={search}
+              onChange={handleSearchChange}
+              onSearch={handleAiSearch}
+              isSearching={isAiSearching}
+            />
             <p className="text-xs text-muted-foreground/70 text-center">
-              Premi <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> o clicca <strong>AI</strong> per trovare i dupe con intelligenza artificiale
+              Digita 2+ lettere per i suggerimenti, poi premi <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> o clicca <strong>AI</strong>
             </p>
           </div>
         </div>
