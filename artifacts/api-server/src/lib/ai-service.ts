@@ -4,7 +4,7 @@ import { resolveProductImageUrl } from "./image-service";
 
 export type DupeTier = "budget" | "mid-range" | "premium-dupe";
 
-const REQUIRED_TIERS: DupeTier[] = ["budget", "mid-range", "premium-dupe"];
+const VALID_TIERS: DupeTier[] = ["budget", "mid-range", "premium-dupe"];
 
 const TIER_PRICE_BANDS: Record<DupeTier, [number, number]> = {
   budget: [5, 15],
@@ -33,19 +33,20 @@ export interface AiSearchPayload {
 const SYSTEM_PROMPT = `Sei un esperto beauty editor specializzato nel mercato europeo. 
 Quando ti viene chiesto di un prodotto beauty, devi:
 1. Identificare il prodotto esatto (nome preciso, brand, prezzo attuale in Europa)
-2. Trovare esattamente 3 dupe reali disponibili in Europa, uno per ogni fascia di prezzo:
+2. Trovare i migliori dupe reali disponibili in Europa, uno per ciascuna fascia di prezzo applicabile:
    - "budget": tra €5 e €15 (es. Essence, Catrice, e.l.f., NYX, Kiko, Isadora, Makeup Revolution)
    - "mid-range": tra €15 e €35 (es. L'Oréal Paris, Maybelline premium, CeraVe, The Inkey List, Paula's Choice entry, Garnier Skin Naturals, NARS essentials)
    - "premium-dupe": tra €35 e il prezzo dell'originale (es. Paula's Choice, Hourglass, NARS, Bobbi Brown essentials, Urban Decay, Pixi, Medik8)
 
 Regole importanti:
-- I prodotti DEVONO essere reali e acquistabili in Europa (Italia, Germania, Francia, UK)
-- Il prezzo deve essere il prezzo reale di listino europeo in euro
-- I prezzi DEVONO rispettare le fasce: budget €5-€15, mid-range €15-€35, premium-dupe €35+
+- I prodotti DEVONO essere reali e acquistabili in Europa (Italia, Germania, Francia, UK). Mai inventare nomi di prodotto o brand.
+- Il prezzo deve essere il prezzo reale di listino europeo in euro.
+- I prezzi DEVONO rispettare le fasce: budget €5-€15, mid-range €15-€35, premium-dupe €35 fino al prezzo dell'originale.
 - Per ogni prodotto, suggerisci un URL immagine reale dal sito ufficiale del brand o da retailer come Sephora, Douglas, Lookfantastic, Amazon. Usa URL di immagini dirette (es. .jpg, .png, .webp). Se non sei sicuro dell'URL, usa stringa vuota "".
-- Il matchScore deve essere un numero realistico tra 70 e 97
-- matchReason deve essere una frase breve (max 120 caratteri) che spiega perché è un buon dupe
-- Devi includere ESATTAMENTE 3 dupe: uno "budget", uno "mid-range", uno "premium-dupe"
+- Il matchScore deve essere un numero realistico tra 70 e 97.
+- matchReason deve essere una frase breve (max 120 caratteri) che spiega perché è un buon dupe.
+- Quantità di dupe: punta SEMPRE a includere tutte e 3 le fasce quando possibile. È accettabile restituire SOLO 2 dupe (saltando la fascia "budget") esclusivamente quando per il prodotto richiesto non esiste un dupe realistico tra €5 e €15 — tipico per profumi di lusso, fragranze di nicchia o prodotti skincare molto specializzati. NON inventare un dupe budget irrealistico solo per riempire la fascia.
+- Ogni dupe deve avere un campo dupeTier valorizzato e diverso dagli altri (massimo uno per fascia: budget, mid-range, premium-dupe).
 
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;
 
@@ -105,6 +106,8 @@ Rispondi con questo schema JSON esatto:
   "found": true
 }
 
+L'array "dupes" deve contenere 1, 2 o 3 elementi (preferibilmente 3). Salta la fascia "budget" se non esiste un dupe realistico tra €5 e €15 (es. per profumi di lusso). Ogni elemento deve avere un dupeTier unico.
+
 Se il prodotto non esiste o non riesci a identificarlo con certezza, rispondi:
 {"found": false, "message": "Prodotto non trovato"}`;
 
@@ -122,18 +125,33 @@ function validateAiResponse(parsed: unknown): { luxury: AiProduct; dupes: AiProd
     return null;
   }
 
-  if (!Array.isArray(p.dupes) || p.dupes.length !== 3) {
-    logger.error({ dupesCount: Array.isArray(p.dupes) ? p.dupes.length : "N/A" }, "AI did not return exactly 3 dupes");
+  if (!Array.isArray(p.dupes) || p.dupes.length < 1 || p.dupes.length > 3) {
+    logger.error(
+      { dupesCount: Array.isArray(p.dupes) ? p.dupes.length : "N/A" },
+      "AI did not return between 1 and 3 dupes"
+    );
     return null;
   }
 
   const dupes = p.dupes as AiProduct[];
-  const tiers = dupes.map((d) => d.dupeTier);
-  const allTiersPresent = REQUIRED_TIERS.every((t) => tiers.includes(t));
-  const allTiersUnique = new Set(tiers).size === 3;
 
-  if (!allTiersPresent || !allTiersUnique) {
-    logger.error({ tiers }, "AI dupes missing required tiers or have duplicate tiers");
+  const allTiersValid = dupes.every(
+    (d) => d.dupeTier !== undefined && d.dupeTier !== null && VALID_TIERS.includes(d.dupeTier)
+  );
+
+  if (!allTiersValid) {
+    logger.error(
+      { tiers: dupes.map((d) => d.dupeTier) },
+      "AI returned a dupe with missing or invalid dupeTier"
+    );
+    return null;
+  }
+
+  const tiers = dupes.map((d) => d.dupeTier);
+  const allTiersUnique = new Set(tiers).size === dupes.length;
+
+  if (!allTiersUnique) {
+    logger.error({ tiers }, "AI dupes contain duplicate tiers");
     return null;
   }
 

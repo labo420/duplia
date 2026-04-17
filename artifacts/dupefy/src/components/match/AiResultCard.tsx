@@ -82,7 +82,9 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
 
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
-            3 Dupe Consigliati dall'AI
+            {orderedDupes.length === 1
+              ? "1 Dupe Consigliato dall'AI"
+              : `${orderedDupes.length} Dupe Consigliati dall'AI`}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

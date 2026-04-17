@@ -191,7 +191,15 @@ router.post("/ai/search", async (req, res): Promise<void> => {
 
       const luxuries = groupProducts.filter((p) => p.type === "Luxury");
       const dupes = groupProducts.filter((p) => p.type === "Dupe");
-      const hasValidGroup = luxuries.length > 0 && dupes.length === 3;
+      const dupeTiers = dupes.map((d) => d.dupeTier);
+      const allDupesHaveTier = dupeTiers.every((t) => t !== null && t !== undefined);
+      const allDupeTiersUnique = new Set(dupeTiers).size === dupeTiers.length;
+      const hasValidGroup =
+        luxuries.length > 0 &&
+        dupes.length >= 1 &&
+        dupes.length <= 3 &&
+        allDupesHaveTier &&
+        allDupeTiersUnique;
 
       if (hasValidGroup) {
         const cachedResponse = {
