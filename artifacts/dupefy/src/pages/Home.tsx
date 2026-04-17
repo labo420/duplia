@@ -118,8 +118,7 @@ export default function Home() {
               }`}
               data-testid={`filter-${cat.category}`}
             >
-              {cat.category}{" "}
-              <span className="ml-1 opacity-50">({cat.count})</span>
+              {cat.category}
             </button>
           ))}
         </section>
