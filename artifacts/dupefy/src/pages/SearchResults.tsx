@@ -91,7 +91,7 @@ export default function SearchResults() {
             aria-label="Torna alla home"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Home</span>
+            <span>Torna alla home</span>
           </button>
           <div className="flex-1">
             <SearchAutocomplete
