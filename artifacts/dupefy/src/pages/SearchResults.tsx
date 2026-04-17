@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useLocation, useSearch } from "wouter";
-import { Loader2, AlertCircle, ArrowLeft, Lightbulb } from "lucide-react";
+import { Loader2, AlertCircle, ArrowLeft, Lightbulb, Search } from "lucide-react";
 import { AiResultCard } from "@/components/match/AiResultCard";
+import { BestGuessConfirmation } from "@/components/match/BestGuessConfirmation";
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
 import { SimilarProducts } from "@/components/search/SimilarProducts";
 import { useAiSearch } from "@workspace/api-client-react";
@@ -27,6 +28,9 @@ export default function SearchResults() {
   const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const lastFiredQueryRef = useRef<string>("");
 
+  // null = waiting for choice, true = confirmed, false = rejected
+  const [bestGuessConfirmed, setBestGuessConfirmed] = useState<boolean | null>(null);
+
   const { recentSearches, addRecentSearch, clearRecentSearches } = useRecentSearches();
 
   const { mutate: runAiSearch, isPending: isAiSearching } = useAiSearch({
@@ -34,6 +38,7 @@ export default function SearchResults() {
       onSuccess: (data, variables) => {
         setAiResult(data);
         setAiError(null);
+        setBestGuessConfirmed(null);
         addRecentSearch(variables.data.query);
       },
       onError: (err: unknown) => {
@@ -42,6 +47,7 @@ export default function SearchResults() {
             ?.data?.message ?? "Prodotto non trovato. Prova con un nome più specifico.";
         setAiError(errMsg);
         setAiResult(null);
+        setBestGuessConfirmed(null);
       },
     },
   });
@@ -73,6 +79,7 @@ export default function SearchResults() {
     setAiResult(null);
     setAiError(null);
     setLoadingMsgIdx(0);
+    setBestGuessConfirmed(null);
     runAiSearch({ data: { query: q } });
   }, [q, runAiSearch]);
 
@@ -93,6 +100,15 @@ export default function SearchResults() {
     if (!query) return;
     navigate(`/search?q=${encodeURIComponent(query)}`);
   }
+
+  // Derived display flags
+  const isBestGuess = aiResult?.isBestGuess === true;
+  const showConfirmationPanel =
+    aiResult && !isAiSearching && isBestGuess && bestGuessConfirmed === null;
+  const showResultCard =
+    aiResult && !isAiSearching && (!isBestGuess || bestGuessConfirmed === true);
+  const showRejectionMessage =
+    aiResult && !isAiSearching && isBestGuess && bestGuessConfirmed === false;
 
   return (
     <div className="flex-1 w-full pb-24">
@@ -152,8 +168,8 @@ export default function SearchResults() {
           </section>
         )}
 
-        {/* Best-guess banner */}
-        {aiResult && aiResult.isBestGuess && !isAiSearching && (
+        {/* Best-guess banner — shown when result is best-guess (regardless of confirmation state) */}
+        {aiResult && isBestGuess && !isAiSearching && (
           <div
             className="flex items-start gap-3 p-4 rounded-2xl border"
             style={{
@@ -180,13 +196,49 @@ export default function SearchResults() {
           </div>
         )}
 
-        {/* Results */}
-        {aiResult && !isAiSearching && (
+        {/* Confirmation panel — shown when best-guess and not yet chosen */}
+        {showConfirmationPanel && (
+          <section className="space-y-4" data-testid="section-confirmation">
+            <h2 className="text-2xl font-serif font-bold tracking-tight">
+              Una possibile alternativa per te
+            </h2>
+            <BestGuessConfirmation
+              result={aiResult!}
+              onConfirm={() => setBestGuessConfirmed(true)}
+              onReject={() => setBestGuessConfirmed(false)}
+            />
+          </section>
+        )}
+
+        {/* Results — shown for exact matches or after best-guess confirmation */}
+        {showResultCard && (
           <section className="space-y-4" data-testid="section-ai-result">
             <h2 className="text-2xl font-serif font-bold tracking-tight">
-              {aiResult.isBestGuess ? "Una possibile alternativa per te" : "Match verificati per te"}
+              {isBestGuess ? "Una possibile alternativa per te" : "Match verificati per te"}
             </h2>
-            <AiResultCard result={aiResult} query={q} />
+            <AiResultCard result={aiResult!} query={q} />
+          </section>
+        )}
+
+        {/* Rejection message — shown after the user says "no" */}
+        {showRejectionMessage && (
+          <section
+            className="space-y-4 py-8 text-center"
+            data-testid="section-rejection"
+          >
+            <div
+              className="inline-flex items-center justify-center w-14 h-14 rounded-full mb-3"
+              style={{ background: "hsl(38 90% 93%)" }}
+            >
+              <Search className="w-6 h-6" style={{ color: "hsl(38 80% 35%)" }} />
+            </div>
+            <h2 className="text-xl font-serif font-bold tracking-tight">
+              Proviamo insieme
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-xs mx-auto">
+              Raffina la ricerca con il nome del brand o del prodotto specifico che hai
+              in mente. Puoi anche esplorare i prodotti simili qui sotto.
+            </p>
           </section>
         )}
 
