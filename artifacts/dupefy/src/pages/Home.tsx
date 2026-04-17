@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
 import { AiResultCard } from "@/components/match/AiResultCard";
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
@@ -11,12 +11,21 @@ import type { AiSearchResult } from "@workspace/api-client-react";
 
 type Category = "Skincare" | "Makeup" | "Haircare" | "Bodycare" | "Fragrance" | undefined;
 
+const LOADING_MESSAGES = [
+  "Scansione INCI in corso…",
+  "Analisi ingredienti attivi…",
+  "Recupero i match dal nostro archivio…",
+  "Verifica del team in corso…",
+  "Quasi pronti…",
+];
+
 export default function Home() {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<Category>(undefined);
   const [aiQuery, setAiQuery] = useState("");
   const [aiResult, setAiResult] = useState<AiSearchResult | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [loadingMsgIdx, setLoadingMsgIdx] = useState(0);
   const lastAiQueryRef = useRef<string>("");
 
   const { mutate: runAiSearch, isPending: isAiSearching } = useAiSearch({
@@ -33,6 +42,17 @@ export default function Home() {
       },
     },
   });
+
+  useEffect(() => {
+    if (!isAiSearching) {
+      setLoadingMsgIdx(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadingMsgIdx((prev) => (prev + 1) % LOADING_MESSAGES.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [isAiSearching]);
 
   function handleAiSearch(q?: string) {
     const query = (q ?? search).trim();
@@ -103,7 +123,7 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin" style={{ color: "hsl(345 55% 32%)" }} />
               <h2 className="text-xl font-serif font-bold tracking-tight">
-                L'AI sta analizzando &ldquo;{search || aiQuery}&rdquo;...
+                {LOADING_MESSAGES[loadingMsgIdx]}
               </h2>
             </div>
             <div className="rounded-3xl border border-border/40 p-8 bg-muted/20 animate-pulse h-64" />
@@ -122,7 +142,7 @@ export default function Home() {
         {aiResult && !isAiSearching && (
           <section className="space-y-4" data-testid="section-ai-result">
             <h2 className="text-2xl font-serif font-bold tracking-tight">
-              Dupe trovati con AI
+              Match verificati per te
             </h2>
             <AiResultCard result={aiResult} query={aiQuery} />
           </section>
@@ -152,7 +172,7 @@ export default function Home() {
                 {selectedCategory ? `Prodotti luxury · ${selectedCategory}` : "Catalogo prodotti luxury"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                Tocca un prodotto per scoprire i suoi dupe con l'AI.
+                Tocca un prodotto per trovare i match verificati dal nostro team.
               </p>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { Sparkles, ShoppingBag } from "lucide-react";
+import { Sparkles, ShoppingBag, CheckCircle2 } from "lucide-react";
 import type { AiSearchResult } from "@workspace/api-client-react";
 import { ProductImage } from "./ProductImage";
 
@@ -63,13 +63,13 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
           }}
         >
           <Sparkles className="w-4 h-4" style={{ color: "hsl(345 55% 32%)" }} />
-          <span>Risultato AI</span>
+          <span>Risultati Verificati</span>
         </div>
         <p className="text-sm text-muted-foreground">
           per <span className="font-medium text-foreground">&ldquo;{query}&rdquo;</span>
         </p>
         {result.isFromCache && (
-          <span className="ml-auto text-xs text-muted-foreground/60">dalla memoria</span>
+          <span className="ml-auto text-xs text-muted-foreground/60">già in archivio</span>
         )}
       </div>
 
@@ -93,8 +93,8 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
         <div>
           <p className="text-xs font-semibold text-muted-foreground uppercase tracking-widest mb-4">
             {orderedDupes.length === 1
-              ? "1 Dupe Consigliato dall'AI"
-              : `${orderedDupes.length} Dupe Consigliati dall'AI`}
+              ? "1 Dupe Verificato dal Team"
+              : `${orderedDupes.length} Dupe Verificati dal Team`}
           </p>
 
           <div
@@ -142,6 +142,19 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
                     </div>
 
                     <div className="p-3 flex-1 flex flex-col">
+                      <div
+                        className="inline-flex items-center gap-1 self-start px-2 py-0.5 rounded-full mb-2"
+                        style={{
+                          background: "hsl(142 50% 95%)",
+                          border: "1px solid hsl(142 50% 72%)",
+                          color: "hsl(142 50% 25%)",
+                        }}
+                      >
+                        <CheckCircle2 style={{ width: "10px", height: "10px" }} />
+                        <span style={{ fontSize: "9px", fontWeight: 600, letterSpacing: "0.04em" }}>
+                          Match Verificato
+                        </span>
+                      </div>
                       <p className="text-[9px] font-semibold text-muted-foreground uppercase tracking-widest mb-0.5">
                         {config.sublabel}
                       </p>

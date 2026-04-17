@@ -1,4 +1,4 @@
-import { Search, Sparkles, Wallet } from "lucide-react";
+import { Search, Zap, ShieldCheck } from "lucide-react";
 
 const STEPS = [
   {
@@ -7,14 +7,14 @@ const STEPS = [
     desc: "Digita il nome di un prodotto beauty di lusso che ti piace, o sceglilo dal catalogo.",
   },
   {
-    icon: Sparkles,
-    title: "L'AI trova le alternative",
-    desc: "Analizziamo migliaia di prodotti europei per trovare i dupe più simili in 3 fasce di prezzo.",
+    icon: Zap,
+    title: "L'algoritmo scansiona gli INCI",
+    desc: "Il nostro algoritmo analizza migliaia di INCI europei in pochi secondi, individuando i candidati con la massima similarità.",
   },
   {
-    icon: Wallet,
-    title: "Risparmi senza rinunce",
-    desc: "Confronta texture, ingredienti e prezzi. Ottieni la stessa qualità a una frazione del costo.",
+    icon: ShieldCheck,
+    title: "Il team certifica ogni match",
+    desc: "Ogni alternativa viene verificata e approvata manualmente dal nostro team di esperte beauty prima di essere pubblicata.",
   },
 ];
 
@@ -29,7 +29,7 @@ export function HowItWorks() {
           Come funziona
         </p>
         <h2 className="text-3xl md:text-4xl font-serif font-bold tracking-tight">
-          Tre passaggi per il tuo dupe
+          Come lavoriamo per te
         </h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
