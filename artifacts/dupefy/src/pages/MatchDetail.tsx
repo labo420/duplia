@@ -1,5 +1,5 @@
 import { useParams, Link } from "wouter";
-import { ArrowLeft, ExternalLink, ShieldCheck, Sparkles, Leaf, Scale } from "lucide-react";
+import { ArrowLeft, ExternalLink, ShieldCheck, Sparkles, Leaf, Scale, CheckCircle2 } from "lucide-react";
 import { useGetMatch, useListMatches, getGetMatchQueryKey, getListMatchesQueryKey } from "@workspace/api-client-react";
 import type { ListMatchesCategory } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -133,6 +133,19 @@ export default function MatchDetail() {
         >
           {match.matchScore}% Somiglianza
         </span>
+        <div
+          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-6"
+          style={{
+            background: "hsl(142 50% 95%)",
+            border: "1px solid hsl(142 50% 72%)",
+            color: "hsl(142 50% 25%)",
+          }}
+          data-testid="verified-badge"
+        >
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          <span className="text-xs font-semibold tracking-wide">Match Verificato</span>
+          <span className="text-xs font-normal opacity-75 hidden sm:inline">· Certificato dal nostro team di esperti</span>
+        </div>
         <h1 className="text-3xl md:text-5xl font-serif font-bold tracking-tight mb-4">
           L'alternativa perfetta
         </h1>
