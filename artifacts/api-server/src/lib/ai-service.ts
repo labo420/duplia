@@ -45,7 +45,7 @@ Regole importanti:
 - Per ogni prodotto, suggerisci un URL immagine reale dal sito ufficiale del brand o da retailer come Sephora, Douglas, Lookfantastic, Amazon. Usa URL di immagini dirette (es. .jpg, .png, .webp). Se non sei sicuro dell'URL, usa stringa vuota "".
 - Il matchScore deve essere un numero realistico tra 70 e 97.
 - matchReason deve essere una frase breve (max 120 caratteri) che spiega perché è un buon dupe.
-- Quantità di dupe: punta SEMPRE a includere tutte e 3 le fasce quando possibile. È accettabile restituire SOLO 2 dupe (saltando la fascia "budget") esclusivamente quando per il prodotto richiesto non esiste un dupe realistico tra €5 e €15 — tipico per profumi di lusso, fragranze di nicchia o prodotti skincare molto specializzati. NON inventare un dupe budget irrealistico solo per riempire la fascia.
+- Quantità di dupe: punta SEMPRE a includere tutte e 3 le fasce quando possibile (questo è l'esito preferito). È accettabile restituire 1 o 2 dupe se per il prodotto richiesto non esiste un'alternativa realistica in una o più fasce — tipico per profumi di lusso, fragranze di nicchia o prodotti skincare molto specializzati che non hanno dupe budget tra €5 e €15. NON inventare dupe irrealistici solo per riempire una fascia: meglio meno dupe ma autentici. La fascia più frequentemente assente è "budget".
 - Ogni dupe deve avere un campo dupeTier valorizzato e diverso dagli altri (massimo uno per fascia: budget, mid-range, premium-dupe).
 
 Rispondi SOLO con JSON valido, nessun testo aggiuntivo.`;

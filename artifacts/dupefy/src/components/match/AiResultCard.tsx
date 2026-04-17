@@ -87,7 +87,15 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
               : `${orderedDupes.length} Dupe Consigliati dall'AI`}
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div
+            className={`grid grid-cols-1 gap-4 ${
+              orderedDupes.length === 1
+                ? "sm:grid-cols-1 sm:max-w-sm sm:mx-auto"
+                : orderedDupes.length === 2
+                  ? "sm:grid-cols-2"
+                  : "sm:grid-cols-3"
+            }`}
+          >
             {orderedDupes.map((dupe) => {
               const tier = dupe.dupeTier as keyof typeof TIER_CONFIG | null;
               const config = tier ? TIER_CONFIG[tier] : TIER_CONFIG.budget;
