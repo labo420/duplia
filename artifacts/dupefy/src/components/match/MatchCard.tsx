@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { CheckCircle2 } from "lucide-react";
 import type { ProductMatch } from "@workspace/api-client-react";
 import { ProductImage } from "./ProductImage";
 
@@ -94,9 +95,24 @@ export function MatchCard({ match }: MatchCardProps) {
                 €{match.priceDifference.toFixed(2)} &middot; {Math.round(match.savingsPercent)}%
               </span>
             </div>
-            <span className="text-sm font-medium text-foreground group-hover:underline underline-offset-4 transition-all">
-              Scopri
-            </span>
+            <div className="flex flex-col items-end gap-1.5">
+              <div
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full"
+                style={{
+                  background: "hsl(142 50% 95%)",
+                  border: "1px solid hsl(142 50% 72%)",
+                  color: "hsl(142 50% 25%)",
+                }}
+              >
+                <CheckCircle2 style={{ width: "10px", height: "10px" }} />
+                <span style={{ fontSize: "9px", fontWeight: 600, letterSpacing: "0.04em" }}>
+                  Match Verificato
+                </span>
+              </div>
+              <span className="text-sm font-medium text-foreground group-hover:underline underline-offset-4 transition-all">
+                Scopri
+              </span>
+            </div>
           </div>
         </div>
       </div>
