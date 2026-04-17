@@ -111,6 +111,38 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/CategorySummary"
+  /products/luxury:
+    get:
+      operationId: listLuxuryProducts
+      tags: [products]
+      summary: List all luxury products (catalog)
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
+      responses:
+        "200":
+          description: List of luxury products
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LuxuryProduct"
+  /stats:
+    get:
+      operationId: getStats
+      tags: [products]
+      summary: Get aggregate stats for social proof
+      responses:
+        "200":
+          description: Stats summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stats"
   /trending:
     get:
       operationId: getTrending
@@ -348,6 +380,46 @@ components:
       required:
         - category
         - count
+    LuxuryProduct:
+      type: object
+      properties:
+        id:
+          type: integer
+        brand:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [Skincare, Makeup, Haircare, Bodycare, Fragrance]
+        imageUrl:
+          type: string
+        price:
+          type: ["number", "null"]
+          format: float
+        isAnalyzed:
+          type: boolean
+      required:
+        - id
+        - brand
+        - name
+        - category
+        - imageUrl
+        - price
+        - isAnalyzed
+    Stats:
+      type: object
+      properties:
+        luxuryProductsCount:
+          type: integer
+        analyzedCount:
+          type: integer
+        avgSavingsPercent:
+          type: integer
+      required:
+        - luxuryProductsCount
+        - analyzedCount
+        - avgSavingsPercent
     AiSuggestion:
       type: object
       properties:

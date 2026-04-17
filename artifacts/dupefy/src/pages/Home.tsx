@@ -1,16 +1,13 @@
 import { useState, useRef } from "react";
 import { Loader2, AlertCircle } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
-import { MatchCard } from "@/components/match/MatchCard";
 import { AiResultCard } from "@/components/match/AiResultCard";
 import { SearchAutocomplete } from "@/components/search/SearchAutocomplete";
-import {
-  useListMatches,
-  useGetCategorySummary,
-  useGetTrending,
-  useAiSearch,
-} from "@workspace/api-client-react";
-import type { AiSearchResult, ListMatchesCategory } from "@workspace/api-client-react";
+import { StatsStrip } from "@/components/home/StatsStrip";
+import { CategoryCards } from "@/components/home/CategoryCards";
+import { LuxuryCatalogGrid } from "@/components/home/LuxuryCatalogGrid";
+import { HowItWorks } from "@/components/home/HowItWorks";
+import { useAiSearch } from "@workspace/api-client-react";
+import type { AiSearchResult } from "@workspace/api-client-react";
 
 type Category = "Skincare" | "Makeup" | "Haircare" | "Bodycare" | "Fragrance" | undefined;
 
@@ -21,13 +18,6 @@ export default function Home() {
   const [aiResult, setAiResult] = useState<AiSearchResult | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const lastAiQueryRef = useRef<string>("");
-
-  const { data: categorySummary } = useGetCategorySummary();
-  const { data: trendingMatches, isLoading: isLoadingTrending } = useGetTrending();
-  const { data: matches, isLoading: isLoadingMatches } = useListMatches({
-    search: search || undefined,
-    category: selectedCategory as ListMatchesCategory | undefined,
-  });
 
   const { mutate: runAiSearch, isPending: isAiSearching } = useAiSearch({
     mutation: {
@@ -44,8 +34,6 @@ export default function Home() {
     },
   });
 
-  const isFiltering = !!search || !!selectedCategory;
-
   function handleAiSearch(q?: string) {
     const query = (q ?? search).trim();
     if (!query || query === lastAiQueryRef.current) return;
@@ -54,6 +42,11 @@ export default function Home() {
     setAiResult(null);
     setAiError(null);
     runAiSearch({ data: { query } });
+
+    // Scroll to results
+    setTimeout(() => {
+      document.getElementById("ai-results-anchor")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   }
 
   function handleSearchChange(value: string) {
@@ -66,10 +59,15 @@ export default function Home() {
     }
   }
 
+  function handleCatalogSelect(query: string) {
+    setSearch(query);
+    handleAiSearch(query);
+  }
+
   return (
     <div className="flex-1 w-full pb-24">
       {/* Hero */}
-      <section className="py-20 md:py-32 px-4 text-center border-b border-border/40">
+      <section className="py-20 md:py-28 px-4 text-center">
         <div className="container mx-auto max-w-3xl space-y-6">
           <h1 className="text-4xl md:text-6xl font-serif font-bold tracking-tight leading-tight">
             L'alternativa perfetta<br />al lusso che ami.
@@ -92,47 +90,23 @@ export default function Home() {
         </div>
       </section>
 
-      <div className="container mx-auto max-w-6xl px-4 mt-12 space-y-16">
+      {/* Stats strip */}
+      <StatsStrip />
 
-        {/* Category filters */}
-        <section className="flex flex-wrap justify-center gap-3" data-testid="section-categories">
-          <button
-            onClick={() => setSelectedCategory(undefined)}
-            className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-              !selectedCategory
-                ? "bg-foreground text-background shadow-md"
-                : "bg-muted text-muted-foreground hover:bg-muted/70"
-            }`}
-            data-testid="filter-all"
-          >
-            Tutti i prodotti
-          </button>
-          {categorySummary?.map((cat) => (
-            <button
-              key={cat.category}
-              onClick={() => setSelectedCategory(cat.category as Category)}
-              className={`px-5 py-2.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                selectedCategory === cat.category
-                  ? "bg-foreground text-background shadow-md"
-                  : "bg-muted text-muted-foreground hover:bg-muted/70"
-              }`}
-              data-testid={`filter-${cat.category}`}
-            >
-              {cat.category}
-            </button>
-          ))}
-        </section>
+      <div className="container mx-auto max-w-6xl px-4 mt-16 space-y-20">
 
-        {/* AI Search Result */}
+        {/* AI Search anchor + results */}
+        <div id="ai-results-anchor" className="scroll-mt-8" />
+
         {isAiSearching && (
           <section className="space-y-4" data-testid="section-ai-loading">
             <div className="flex items-center gap-3">
               <Loader2 className="w-5 h-5 animate-spin" style={{ color: "hsl(345 55% 32%)" }} />
               <h2 className="text-xl font-serif font-bold tracking-tight">
-                L'AI sta analizzando &ldquo;{search}&rdquo;...
+                L'AI sta analizzando &ldquo;{search || aiQuery}&rdquo;...
               </h2>
             </div>
-            <div className="rounded-3xl border border-border/40 p-8 bg-muted/20 animate-pulse" />
+            <div className="rounded-3xl border border-border/40 p-8 bg-muted/20 animate-pulse h-64" />
           </section>
         )}
 
@@ -154,61 +128,39 @@ export default function Home() {
           </section>
         )}
 
-        {/* Trend del Momento */}
-        {!isFiltering && !aiResult && !isAiSearching && (
-          <section className="space-y-6">
-            <h2 className="text-2xl font-serif font-bold tracking-tight">Trend del Momento</h2>
-            {isLoadingTrending ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {[1, 2, 3].map((i) => (
-                  <Skeleton key={i} className="h-[440px] rounded-3xl" />
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Array.isArray(trendingMatches) && trendingMatches.map((match) => (
-                  <MatchCard key={match.matchId} match={match} />
-                ))}
-              </div>
-            )}
-          </section>
-        )}
-
-        {/* Main matches feed */}
+        {/* Categories */}
         <section className="space-y-6">
-          <h2 className="text-2xl font-serif font-bold tracking-tight">
-            {search
-              ? "Risultati nella libreria"
-              : selectedCategory
-              ? `Tutto in ${selectedCategory}`
-              : "Scopri i Dupe"}
-          </h2>
+          <div className="text-center space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "hsl(345 55% 32%)" }}>
+              Esplora per categoria
+            </p>
+            <h2 className="text-3xl md:text-4xl font-serif font-bold tracking-tight">
+              Cosa stai cercando?
+            </h2>
+          </div>
+          <CategoryCards
+            selected={selectedCategory}
+            onSelect={(c) => setSelectedCategory(c as Category)}
+          />
+        </section>
 
-          {isLoadingMatches ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <Skeleton key={i} className="h-[440px] rounded-3xl" />
-              ))}
-            </div>
-          ) : matches?.length === 0 && !search ? (
-            <div className="py-24 text-center text-muted-foreground rounded-3xl border border-dashed border-border">
-              Nessun risultato trovato.
-            </div>
-          ) : matches?.length === 0 && search ? (
-            <div className="py-16 text-center space-y-4 rounded-3xl border border-dashed border-border">
-              <p className="text-muted-foreground">Nessun risultato nella libreria per &ldquo;{search}&rdquo;.</p>
-              <p className="text-sm text-muted-foreground/70">
-                Premi <strong>AI</strong> in alto oppure <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono">Enter</kbd> per cercarlo con l'intelligenza artificiale.
+        {/* Luxury catalog grid */}
+        <section className="space-y-6">
+          <div className="flex items-end justify-between">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-serif font-bold tracking-tight">
+                {selectedCategory ? `Prodotti luxury · ${selectedCategory}` : "Catalogo prodotti luxury"}
+              </h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Tocca un prodotto per scoprire i suoi dupe con l'AI.
               </p>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matches?.map((match) => (
-                <MatchCard key={match.matchId} match={match} />
-              ))}
-            </div>
-          )}
+          </div>
+          <LuxuryCatalogGrid category={selectedCategory} onSelectProduct={handleCatalogSelect} />
         </section>
+
+        {/* How it works */}
+        <HowItWorks />
 
       </div>
     </div>

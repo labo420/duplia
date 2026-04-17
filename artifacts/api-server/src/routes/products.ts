@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { eq, and, ilike, or, sql, isNull, type SQL } from "drizzle-orm";
+import { eq, and, ilike, or, sql, isNull, isNotNull, type SQL } from "drizzle-orm";
 import { db, productsTable } from "@workspace/db";
 import {
   ListProductsQueryParams,
@@ -10,6 +10,9 @@ import {
   GetMatchResponse,
   GetCategorySummaryResponse,
   GetTrendingResponse,
+  ListLuxuryProductsQueryParams,
+  ListLuxuryProductsResponse,
+  GetStatsResponse,
   AdminListProductsResponse,
   AdminCreateProductBody,
   AdminDeleteProductParams,
@@ -195,6 +198,100 @@ router.get("/categories/summary", async (_req, res): Promise<void> => {
     .groupBy(productsTable.category);
 
   res.json(GetCategorySummaryResponse.parse(result));
+});
+
+router.get("/products/luxury", async (req, res): Promise<void> => {
+  const params = ListLuxuryProductsQueryParams.safeParse(req.query);
+
+  const conditions: SQL[] = [eq(productsTable.type, "Luxury")];
+  if (params.success && params.data.category) {
+    conditions.push(eq(productsTable.category, params.data.category));
+  }
+
+  const rows = await db
+    .select({
+      id: productsTable.id,
+      brand: productsTable.brand,
+      name: productsTable.name,
+      category: productsTable.category,
+      imageUrl: productsTable.imageUrl,
+      price: productsTable.price,
+      luxuryGroupId: productsTable.luxuryGroupId,
+    })
+    .from(productsTable)
+    .where(and(...conditions))
+    .orderBy(productsTable.brand, productsTable.name);
+
+  // Deduplicate by brand+name (keep the one that's already analyzed if present)
+  const map = new Map<string, typeof rows[number]>();
+  for (const r of rows) {
+    const key = `${r.brand}|${r.name}`;
+    const existing = map.get(key);
+    if (!existing || (r.luxuryGroupId !== null && existing.luxuryGroupId === null)) {
+      map.set(key, r);
+    }
+  }
+
+  const out = Array.from(map.values()).map((r) => ({
+    id: r.id,
+    brand: r.brand,
+    name: r.name,
+    category: r.category,
+    imageUrl: r.imageUrl,
+    price: r.price > 0 ? r.price : null,
+    isAnalyzed: r.luxuryGroupId !== null,
+  }));
+
+  res.json(ListLuxuryProductsResponse.parse(out));
+});
+
+router.get("/stats", async (_req, res): Promise<void> => {
+  const luxuryCountRow = await db
+    .select({ c: sql<number>`count(distinct (${productsTable.brand} || '|' || ${productsTable.name}))::int` })
+    .from(productsTable)
+    .where(eq(productsTable.type, "Luxury"));
+
+  const analyzedCountRow = await db
+    .select({ c: sql<number>`count(distinct ${productsTable.luxuryGroupId})::int` })
+    .from(productsTable)
+    .where(and(eq(productsTable.type, "Luxury"), isNotNull(productsTable.luxuryGroupId)));
+
+  // Avg savings: per group, savings = (luxuryPrice - minDupePrice) / luxuryPrice * 100
+  const groups = await db
+    .select({
+      luxuryGroupId: productsTable.luxuryGroupId,
+      type: productsTable.type,
+      price: productsTable.price,
+    })
+    .from(productsTable)
+    .where(isNotNull(productsTable.luxuryGroupId));
+
+  const byGroup = new Map<number, { luxury: number | null; minDupe: number | null }>();
+  for (const r of groups) {
+    if (r.luxuryGroupId === null) continue;
+    const g = byGroup.get(r.luxuryGroupId) ?? { luxury: null, minDupe: null };
+    if (r.type === "Luxury" && r.price > 0) g.luxury = r.price;
+    if (r.type === "Dupe" && r.price > 0) {
+      g.minDupe = g.minDupe === null ? r.price : Math.min(g.minDupe, r.price);
+    }
+    byGroup.set(r.luxuryGroupId, g);
+  }
+
+  const savings: number[] = [];
+  for (const g of byGroup.values()) {
+    if (g.luxury && g.minDupe && g.luxury > 0) {
+      savings.push(((g.luxury - g.minDupe) / g.luxury) * 100);
+    }
+  }
+  const avgSavings = savings.length > 0
+    ? Math.round(savings.reduce((a, b) => a + b, 0) / savings.length)
+    : 0;
+
+  res.json(GetStatsResponse.parse({
+    luxuryProductsCount: luxuryCountRow[0]?.c ?? 0,
+    analyzedCount: analyzedCountRow[0]?.c ?? 0,
+    avgSavingsPercent: avgSavings,
+  }));
 });
 
 router.get("/trending", async (_req, res): Promise<void> => {

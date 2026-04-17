@@ -227,6 +227,43 @@ export const GetCategorySummaryResponse = zod.array(
 );
 
 /**
+ * @summary List all luxury products (catalog)
+ */
+export const ListLuxuryProductsQueryParams = zod.object({
+  category: zod
+    .enum(["Skincare", "Makeup", "Haircare", "Bodycare", "Fragrance"])
+    .optional(),
+});
+
+export const ListLuxuryProductsResponseItem = zod.object({
+  id: zod.number(),
+  brand: zod.string(),
+  name: zod.string(),
+  category: zod.enum([
+    "Skincare",
+    "Makeup",
+    "Haircare",
+    "Bodycare",
+    "Fragrance",
+  ]),
+  imageUrl: zod.string(),
+  price: zod.number().nullable(),
+  isAnalyzed: zod.boolean(),
+});
+export const ListLuxuryProductsResponse = zod.array(
+  ListLuxuryProductsResponseItem,
+);
+
+/**
+ * @summary Get aggregate stats for social proof
+ */
+export const GetStatsResponse = zod.object({
+  luxuryProductsCount: zod.number(),
+  analyzedCount: zod.number(),
+  avgSavingsPercent: zod.number(),
+});
+
+/**
  * @summary Get trending matches
  */
 export const GetTrendingResponseItem = zod.object({

@@ -52,7 +52,7 @@ export function SearchAutocomplete({
       query: {
         enabled: debouncedQuery.length >= 2,
         staleTime: 30_000,
-      },
+      } as never,
     }
   );
 

@@ -80,6 +80,34 @@ export interface CategorySummary {
   count: number;
 }
 
+export type LuxuryProductCategory =
+  (typeof LuxuryProductCategory)[keyof typeof LuxuryProductCategory];
+
+export const LuxuryProductCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
+} as const;
+
+export interface LuxuryProduct {
+  id: number;
+  brand: string;
+  name: string;
+  category: LuxuryProductCategory;
+  imageUrl: string;
+  /** @nullable */
+  price: number | null;
+  isAnalyzed: boolean;
+}
+
+export interface Stats {
+  luxuryProductsCount: number;
+  analyzedCount: number;
+  avgSavingsPercent: number;
+}
+
 export type AiSuggestionCategory =
   (typeof AiSuggestionCategory)[keyof typeof AiSuggestionCategory];
 
@@ -174,6 +202,21 @@ export type ListMatchesCategory =
   (typeof ListMatchesCategory)[keyof typeof ListMatchesCategory];
 
 export const ListMatchesCategory = {
+  Skincare: "Skincare",
+  Makeup: "Makeup",
+  Haircare: "Haircare",
+  Bodycare: "Bodycare",
+  Fragrance: "Fragrance",
+} as const;
+
+export type ListLuxuryProductsParams = {
+  category?: ListLuxuryProductsCategory;
+};
+
+export type ListLuxuryProductsCategory =
+  (typeof ListLuxuryProductsCategory)[keyof typeof ListLuxuryProductsCategory];
+
+export const ListLuxuryProductsCategory = {
   Skincare: "Skincare",
   Makeup: "Makeup",
   Haircare: "Haircare",

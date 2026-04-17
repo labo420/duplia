@@ -25,10 +25,13 @@ import type {
   CreateProductBody,
   GetAiSuggestionsParams,
   HealthStatus,
+  ListLuxuryProductsParams,
   ListMatchesParams,
   ListProductsParams,
+  LuxuryProduct,
   Product,
   ProductMatch,
+  Stats,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -455,6 +458,168 @@ export function useGetCategorySummary<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetCategorySummaryQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List all luxury products (catalog)
+ */
+export const getListLuxuryProductsUrl = (params?: ListLuxuryProductsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/products/luxury?${stringifiedParams}`
+    : `/api/products/luxury`;
+};
+
+export const listLuxuryProducts = async (
+  params?: ListLuxuryProductsParams,
+  options?: RequestInit,
+): Promise<LuxuryProduct[]> => {
+  return customFetch<LuxuryProduct[]>(getListLuxuryProductsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListLuxuryProductsQueryKey = (
+  params?: ListLuxuryProductsParams,
+) => {
+  return [`/api/products/luxury`, ...(params ? [params] : [])] as const;
+};
+
+export const getListLuxuryProductsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listLuxuryProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListLuxuryProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLuxuryProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListLuxuryProductsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listLuxuryProducts>>
+  > = ({ signal }) => listLuxuryProducts(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listLuxuryProducts>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListLuxuryProductsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listLuxuryProducts>>
+>;
+export type ListLuxuryProductsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all luxury products (catalog)
+ */
+
+export function useListLuxuryProducts<
+  TData = Awaited<ReturnType<typeof listLuxuryProducts>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListLuxuryProductsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listLuxuryProducts>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListLuxuryProductsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get aggregate stats for social proof
+ */
+export const getGetStatsUrl = () => {
+  return `/api/stats`;
+};
+
+export const getStats = async (options?: RequestInit): Promise<Stats> => {
+  return customFetch<Stats>(getGetStatsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetStatsQueryKey = () => {
+  return [`/api/stats`] as const;
+};
+
+export const getGetStatsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetStatsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getStats>>> = ({
+    signal,
+  }) => getStats({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getStats>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetStatsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getStats>>
+>;
+export type GetStatsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get aggregate stats for social proof
+ */
+
+export function useGetStats<
+  TData = Awaited<ReturnType<typeof getStats>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getStats>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetStatsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
