@@ -80,7 +80,7 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-widest mb-1">
-              Prodotto Originale
+              Prodotto Luxury
             </p>
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-0.5">
               {luxury.brand}
