@@ -41,6 +41,16 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
 
   const orderedDupes = [budgetDupe, midRangeDupe, premiumDupe].filter(Boolean) as typeof dupes;
 
+  const missingTiers = (
+    [
+      ["budget", budgetDupe],
+      ["mid-range", midRangeDupe],
+      ["premium-dupe", premiumDupe],
+    ] as const
+  )
+    .filter(([, d]) => !d)
+    .map(([tier]) => tier);
+
   return (
     <div className="rounded-3xl border border-border/60 overflow-hidden bg-card shadow-lg">
       <div className="px-6 pt-6 pb-4 border-b border-border/40 flex items-center gap-3">
@@ -157,6 +167,20 @@ export function AiResultCard({ result, query }: AiResultCardProps) {
               );
             })}
           </div>
+
+          {missingTiers.length > 0 && (
+            <div className="mt-4 space-y-1">
+              {missingTiers.map((tier) => (
+                <p
+                  key={tier}
+                  className="text-xs text-muted-foreground/70 italic"
+                  data-testid={`ai-missing-${tier}`}
+                >
+                  Nessun dupe {TIER_CONFIG[tier].label} realistico trovato per questo prodotto.
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
