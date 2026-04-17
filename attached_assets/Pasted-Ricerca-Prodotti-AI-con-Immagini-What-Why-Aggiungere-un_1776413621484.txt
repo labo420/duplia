@@ -1,0 +1,57 @@
+Ricerca Prodotti AI con Immagini
+
+What & Why
+
+Aggiungere un motore di ricerca intelligente che, quando l'utente cerca un prodotto (es. "Charlotte Tilbury Flawless Filter"), usa l'AI per identificarlo con precisione, trovare esattamente 3 dupe suddivisi per fascia di prezzo, recuperare immagini professionali tramite Google Custom Search Image API, e salvare tutto nel database. I dati vengono aggiornati automaticamente in background dopo un periodo di scadenza, così nuovi dupe usciti sul mercato vengono sempre scoperti.
+
+
+
+Done looks like
+
+L'utente digita il nome di un prodotto nella barra di ricerca e trova risultati reali e precisi
+
+Per ogni prodotto originale l'AI restituisce esattamente 3 dupe, uno per fascia di prezzo:
+
+Best Budget (€5–€15): es. Essence, Catrice, e.l.f., NYX, Kiko
+
+Best Mid-Range (€15–€35): es. L'Oréal, CeraVe, The Inkey List
+
+Best Premium Dupe (€35–prezzo originale): es. Paula's Choice, NARS, Pixi
+
+Ogni dupe mostra un'etichetta visiva con la sua fascia ("Budget", "Mid-Range", "Premium Dupe")
+
+Ogni prodotto ha un'immagine professionale recuperata tramite Google Image Search
+
+I prodotti ricercati rimangono salvati nel database: ricerche successive sono immediate
+
+I dupe vengono aggiornati automaticamente in background dopo 30 giorni (Makeup/Fragrance) o 60 giorni (Skincare/Haircare/Bodycare), così nuovi dupe appena usciti vengono scoperti e aggiunti senza che l'utente debba fare nulla
+
+Un indicatore visivo (spinner/animazione) mostra quando l'AI sta lavorando
+
+Se un prodotto non viene trovato dall'AI, viene mostrato un messaggio chiaro
+
+Le categorie sono aggiornate a: Skincare, Makeup, Haircare, Bodycare, Fragrance
+
+Out of scope
+
+Sistema di affiliate link automatico (mantenuto come campo manuale nel DB)
+
+Moderazione o review delle risposte AI prima della pubblicazione
+
+Ricerca multilingua (solo italiano/nomi prodotto internazionali)
+
+Tasks
+
+Aggiornare lo schema database — Aggiungere le categorie Haircare e Bodycare, rinominare Profumi in Fragrance, aggiungere il campo dupe_tier ("budget" | "mid-range" | "premium-dupe") per i prodotti dupe, e aggiungere last_ai_checked_at per tracciare quando l'AI ha generato/aggiornato i dupe di un prodotto. Aggiornare anche le API e i tipi condivisi di conseguenza.
+
+
+
+Configurare le integrazioni AI e Google Image Search — Aggiungere Anthropic (per la generazione dupe) e Google Custom Search API (per le immagini) come integrazioni Replit. Creare un servizio condiviso nel backend che le orchestri.
+
+
+
+Creare l'endpoint AI di ricerca prodotti con logica di aggiornamento automatico — Aggiungere un endpoint POST /api/ai/search al backend che: controlla se il prodotto esiste già nel DB e se i dupe sono ancora "freschi" (entro la soglia di scadenza per categoria); se scaduti o non presenti, chiama l'AI per generare esattamente 3 dupe divisi per fascia (Budget/Mid-Range/Premium Dupe), recupera le immagini via Google, aggiorna il DB. Se i dati sono già freschi, serve subito dalla cache.
+
+
+
+Aggiornare il frontend con la nuova esperienza di ricerca — Modificare la barra di ricerca in Home.tsx per mostrare spinner durante la generazione AI, visualizzare i 3 dupe con le etichette di fascia di prezzo, e gestire gli errori se l'AI non trova il prodotto.
